@@ -1,0 +1,19 @@
+{
+  "name": "python-data-edu-platform",
+  "version": "1.0.0",
+  "description": "Python 商务数据分析在线教育平台（纯静态，Cloudflare Pages 可直接发布）。",
+  "private": true,
+  "scripts": {
+    "build": "node scripts/build.js",
+    "start": "python3 -m http.server 8000"
+  },
+  "keywords": [
+    "education",
+    "python",
+    "data-analysis",
+    "cloudflare-pages",
+    "static-site"
+  ],
+  "author": "wangqi",
+  "license": "MIT"
+}
