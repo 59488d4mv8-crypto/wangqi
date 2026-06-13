@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>成就中心 - 学习中心</title>
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<nav class="site-nav" aria-label="主导航">
+  <div class="nav-inner">
+    <a href="index.html" class="brand">学习中心</a>
+    <ul class="menu" role="menubar">
+      <li><a href="index.html" data-nav>首页</a></li>
+      <li><a href="courses.html" data-nav>课程</a></li>
+      <li><a href="achievements.html" data-nav>成就中心</a></li>
+    </ul>
+  </div>
+</nav>
+
+<main class="page">
+  <section class="page-header">
+    <h1>成就中心</h1>
+    <p>通过学习积累积分，解锁属于你的专属徽章。</p>
+  </section>
+
+  <section class="section" id="achievement-stats">
+    <div class="card-grid" id="stats-cards"></div>
+    <div style="margin-top:16px;">
+      <button class="btn" id="btn-refresh-badges">重新检查徽章</button>
+      <a class="btn btn-outline" href="index.html" style="margin-left:8px;">返回首页</a>
+    </div>
+  </section>
+
+  <section class="section" id="achievement-badges">
+    <div class="page-header">
+      <h2>徽章列表</h2>
+      <p>完成学习目标或达到条件即可获得对应徽章。</p>
+    </div>
+    <div class="card-grid" id="badge-cards"></div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <p>© <span data-current-year></span> 在线学习中心 · 保留所有权利</p>
+</footer>
+
+<script src="assets/js/storage.js"></script>
+<script src="assets/js/achievements.js"></script>
+<script src="assets/js/app.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  function renderStats(badges) {
+    var statsContainer = document.getElementById("stats-cards");
+    statsContainer.innerHTML = "";
+
+    var totalPoints = window.LearnStore.getTotalPoints();
+    var earned = 0;
+    if (badges && badges.length) {
+      for (var i = 0; i < badges.length; i += 1) {
+        if (window.LearnStore.hasBadge(badges[i].id)) earned += 1;
+      }
+    }
+
+    var cards = [
+      { label: "当前总积分", value: totalPoints, hint: "通过学习与徽章累计" },
+      { label: "已获得徽章", value: earned + " / " + (badges ? badges.length : 0), hint: "保持连续学习解锁更多" }
+    ];
+    for (var j = 0; j < cards.length; j += 1) {
+      var c = document.createElement("div");
+      c.className = "stat-card card";
+      var h = document.createElement("h3");
+      h.textContent = cards[j].label;
+      c.appendChild(h);
+      var val = document.createElement("div");
+      val.className = "stat-value";
+      val.textContent = cards[j].value;
+      c.appendChild(val);
+      if (cards[j].hint) {
+        var p = document.createElement("p");
+        p.className = "card-desc";
+        p.style.margin = "6px 0 0";
+        p.textContent = cards[j].hint;
+        c.appendChild(p);
+      }
+      statsContainer.appendChild(c);
+    }
+  }
+
+  function renderBadges(badges) {
+    var container = document.getElementById("badge-cards");
+    container.innerHTML = "";
+    if (!badges || badges.length === 0) {
+      var empty = document.createElement("div");
+      empty.className = "card";
+      empty.innerHTML = "<h3 class='card-title'>暂无徽章</h3><p class='card-desc'>徽章数据加载失败或尚未配置。</p>";
+      container.appendChild(empty);
+      return;
+    }
+
+    for (var i = 0; i < badges.length; i += 1) {
+      var b = badges[i];
+      var card = document.createElement("div");
+      card.className = "card badge-card";
+      var earned = window.LearnStore.hasBadge(b.id);
+      if (earned) card.classList.add("earned");
+
+      var icon = document.createElement("div");
+      icon.className = "badge-icon";
+      icon.textContent = b.icon || "🏅";
+      card.appendChild(icon);
+
+      var title = document.createElement("h3");
+      title.className = "card-title";
+      title.textContent = b.title || "未命名徽章";
+      card.appendChild(title);
+
+      var desc = document.createElement("p");
+      desc.className = "card-desc";
+      desc.textContent = b.description || "";
+      card.appendChild(desc);
+
+      var points = document.createElement("div");
+      points.className = "badge-points";
+      points.textContent = (earned ? "已解锁 · " : "未解锁 · ") + "+" + (Number(b.points) || 0) + " 分";
+      card.appendChild(points);
+
+      container.appendChild(card);
+    }
+  }
+
+  function refresh() {
+    if (!window.Achievements || typeof window.Achievements.checkAll !== "function") return;
+    window.Achievements.checkAll(null).then(function () {
+      return window.Achievements.loadAll();
+    }).then(function (badges) {
+      renderStats(badges);
+      renderBadges(badges);
+      if (window.showToast) window.showToast("已重新检查徽章", "success");
+    }).catch(function (err) {
+      if (window.showToast) window.showToast("加载徽章失败：" + (err && err.message ? err.message : err), "error");
+    });
+  }
+
+  function init() {
+    var today = new Date().toISOString().slice(0, 10);
+    window.LearnStore.touchVisitDay(today);
+    var refreshBtn = document.getElementById("btn-refresh-badges");
+    if (refreshBtn) refreshBtn.addEventListener("click", refresh);
+    refresh();
+  }
+
+  document.addEventListener("DOMContentLoaded", init);
+})();
+</script>
+</body>
+</html>

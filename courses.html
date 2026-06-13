@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>课程列表 - 学习中心</title>
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<nav class="site-nav" aria-label="主导航">
+  <div class="nav-inner">
+    <a href="index.html" class="brand">学习中心</a>
+    <ul class="menu" role="menubar">
+      <li><a href="index.html" data-nav>首页</a></li>
+      <li><a href="courses.html" data-nav>课程</a></li>
+      <li><a href="achievements.html" data-nav>成就中心</a></li>
+    </ul>
+  </div>
+</nav>
+
+<main class="page">
+  <section class="page-header">
+    <h1>课程列表</h1>
+    <p id="header-summary">加载中…</p>
+  </section>
+
+  <section class="section" style="background:#ffffff;border:1px solid var(--color-border);border-radius:10px;padding:16px 18px;">
+    <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;">
+      <input id="search-input" type="search" placeholder="搜索课程标题 / 简介 / 技能…" style="flex:1;min-width:220px;padding:8px 12px;border:1px solid var(--color-border);border-radius:8px;font-size:0.95rem;">
+      <span style="font-size:0.85rem;color:var(--color-text-light);" id="filter-hint">实时过滤</span>
+    </div>
+    <div style="margin-top:12px;">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <span style="font-size:0.9rem;color:var(--color-text);font-weight:600;">技能标签：</span>
+        <span id="tag-filter-row" class="tag-filter-row" style="flex:1;"></span>
+        <button id="btn-clear-filter" class="btn-ghost" type="button">清空筛选</button>
+      </div>
+      <div id="filter-summary" class="filter-summary">当前过滤条件：搜索=，标签=（无）</div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div id="course-grid" class="card-grid"></div>
+    <p id="empty-hint" style="display:none;text-align:center;color:var(--color-text-light);">没有匹配的课程。</p>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <p>© <span data-current-year></span> 在线学习中心 · 保留所有权利</p>
+</footer>
+
+<script src="assets/js/storage.js"></script>
+<script src="assets/js/course.js"></script>
+<script src="assets/js/app.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  var state = { courses: [], selectedTags: [] };
+
+  function levelTag(level) {
+    if (level === "入门") return "tag-level-easy";
+    if (level === "进阶") return "tag-level-mid";
+    if (level === "挑战") return "tag-level-hard";
+    return "";
+  }
+
+  function isCompleted(courseId, chapterCount) {
+    if (!chapterCount) return false;
+    var read = LearnStore.getChapterProgress(courseId).read;
+    return read.size >= chapterCount;
+  }
+
+  function renderHeader() {
+    var total = state.courses.length;
+    var completed = 0;
+    for (var i = 0; i < state.courses.length; i += 1) {
+      if (LearnStore.getExamScore(state.courses[i].id) && LearnStore.getExamScore(state.courses[i].id).passed) {
+        completed += 1;
+      }
+    }
+    var summary = document.getElementById("header-summary");
+    if (summary) {
+      summary.textContent = "本平台共 " + total + " 门课程 · 已通过 " + completed + " 门。开始你的学习旅程吧！";
+    }
+  }
+
+  function renderGrid(keyword, tags) {
+    var grid = document.getElementById("course-grid");
+    var empty = document.getElementById("empty-hint");
+    if (!grid) return;
+    grid.innerHTML = "";
+    var term = (keyword || "").trim().toLowerCase();
+    var tagList = Array.isArray(tags) ? tags : [];
+    var visible = 0;
+
+    for (var i = 0; i < state.courses.length; i += 1) {
+      var c = state.courses[i];
+      var title = c.title || "";
+      var summary = c.summary || "";
+      var skills = Array.isArray(c.skills) ? c.skills : [];
+      var skillStr = skills.join(" ");
+
+      if (tagList.length > 0) {
+        var ok = true;
+        for (var t = 0; t < tagList.length; t += 1) {
+          if (skills.indexOf(tagList[t]) === -1) {
+            ok = false;
+            break;
+          }
+        }
+        if (!ok) continue;
+      }
+
+      var haystack = (title + " " + summary + " " + skillStr).toLowerCase();
+      if (term && haystack.indexOf(term) === -1) continue;
+      visible += 1;
+
+      var card = document.createElement("article");
+      card.className = "card";
+
+      var h = document.createElement("h3");
+      h.className = "card-title";
+      h.textContent = title;
+      card.appendChild(h);
+
+      var desc = document.createElement("p");
+      desc.className = "card-desc";
+      desc.textContent = summary;
+      card.appendChild(desc);
+
+      var meta = document.createElement("div");
+      meta.className = "card-meta";
+      var level = document.createElement("span");
+      level.className = "tag " + levelTag(c.difficulty);
+      level.textContent = c.difficulty || "未分级";
+      meta.appendChild(level);
+
+      var hours = document.createElement("span");
+      hours.className = "tag";
+      hours.textContent = (c.hours || 0) + " 小时";
+      meta.appendChild(hours);
+
+      var skillList = Array.isArray(c.skills) ? c.skills.slice(0, 4) : [];
+      for (var s = 0; s < skillList.length; s += 1) {
+        var t = document.createElement("span");
+        t.className = "tag";
+        t.textContent = skillList[s];
+        meta.appendChild(t);
+      }
+      card.appendChild(meta);
+
+      var exam = LearnStore.getExamScore(c.id);
+      if (exam && exam.passed) {
+        var passedTag = document.createElement("div");
+        passedTag.style.marginBottom = "12px";
+        passedTag.innerHTML = '<span class="tag" style="background:#ecfdf5;color:#065f46;">已通过 · ' + Math.round(exam.score) + " 分</span>";
+        card.appendChild(passedTag);
+      }
+
+      var link = document.createElement("a");
+      link.className = "btn btn-outline";
+      link.href = "course.html?id=" + encodeURIComponent(c.id);
+      link.textContent = "查看详情";
+      card.appendChild(link);
+
+      grid.appendChild(card);
+    }
+
+    if (empty) empty.style.display = visible === 0 ? "block" : "none";
+  }
+
+  function collectTags() {
+    var seen = {};
+    var result = [];
+    for (var i = 0; i < state.courses.length; i += 1) {
+      var skills = Array.isArray(state.courses[i].skills) ? state.courses[i].skills : [];
+      for (var s = 0; s < skills.length; s += 1) {
+        var k = skills[s];
+        if (!seen[k]) {
+          seen[k] = true;
+          result.push(k);
+        }
+      }
+    }
+    return result;
+  }
+
+  function renderTags() {
+    var row = document.getElementById("tag-filter-row");
+    if (!row) return;
+    row.innerHTML = "";
+    var tags = collectTags();
+    for (var i = 0; i < tags.length; i += 1) {
+      var btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "tag tag-filter";
+      btn.setAttribute("data-tag", tags[i]);
+      btn.textContent = tags[i];
+      row.appendChild(btn);
+    }
+  }
+
+  function updateFilterSummary(keyword) {
+    var el = document.getElementById("filter-summary");
+    if (!el) return;
+    var term = (keyword || "").trim();
+    var tagStr = state.selectedTags.length === 0 ? "（无）" : state.selectedTags.join(" / ");
+    el.textContent = "当前过滤条件：搜索=" + term + "，标签=" + tagStr;
+  }
+
+  function refresh() {
+    var si = document.getElementById("search-input");
+    var term = si ? si.value : "";
+    renderGrid(term, state.selectedTags);
+    updateFilterSummary(term);
+  }
+
+  function onTagClick(e) {
+    var target = e && e.target;
+    if (!target || !target.classList || !target.classList.contains("tag-filter")) return;
+    var tag = target.getAttribute("data-tag");
+    var idx = state.selectedTags.indexOf(tag);
+    if (idx === -1) {
+      state.selectedTags.push(tag);
+      target.classList.add("active");
+    } else {
+      state.selectedTags.splice(idx, 1);
+      target.classList.remove("active");
+    }
+    refresh();
+  }
+
+  function clearFilters() {
+    state.selectedTags = [];
+    var row = document.getElementById("tag-filter-row");
+    if (row) {
+      var buttons = row.querySelectorAll(".tag-filter");
+      for (var i = 0; i < buttons.length; i += 1) {
+        buttons[i].classList.remove("active");
+      }
+    }
+    var si = document.getElementById("search-input");
+    if (si) si.value = "";
+    refresh();
+  }
+
+  function onInput() {
+    refresh();
+  }
+
+  CourseData.loadIndex().then(function (data) {
+    state.courses = Array.isArray(data) ? data : (data && data.courses ? data.courses : []);
+    renderHeader();
+    renderTags();
+    refresh();
+    var si = document.getElementById("search-input");
+    if (si) si.addEventListener("input", onInput);
+    var row = document.getElementById("tag-filter-row");
+    if (row) row.addEventListener("click", onTagClick);
+    var clear = document.getElementById("btn-clear-filter");
+    if (clear) clear.addEventListener("click", clearFilters);
+  }).catch(function (err) {
+    var summary = document.getElementById("header-summary");
+    if (summary) summary.textContent = "加载课程失败：" + err.message;
+  });
+})();
+</script>
+</body>
+</html>

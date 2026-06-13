@@ -1,0 +1,112 @@
+[
+  {
+    "id": "first-course-completed",
+    "title": "初次开课",
+    "description": "完成任意一门课程的学习，解锁基础数据分析学习体验。",
+    "icon": "🎓",
+    "points": 100,
+    "condition": {
+      "type": "firstCourseCompleted",
+      "value": "1"
+    }
+  },
+  {
+    "id": "streak-7-days",
+    "title": "七日坚持",
+    "description": "连续登录学习 7 天，展现持续学习的毅力。",
+    "icon": "🔥",
+    "points": 150,
+    "condition": {
+      "type": "streakDays",
+      "value": "7"
+    }
+  },
+  {
+    "id": "exam-full-score",
+    "title": "满分学霸",
+    "description": "在某门课程的测评中取得满分，掌握知识全面。",
+    "icon": "⭐",
+    "points": 200,
+    "condition": {
+      "type": "examFullScore",
+      "value": "100"
+    }
+  },
+  {
+    "id": "total-points-1000",
+    "title": "千分学者",
+    "description": "累计积分达到 1000 分，代表勤奋的学习表现。",
+    "icon": "📊",
+    "points": 100,
+    "condition": {
+      "type": "totalPoints",
+      "value": "1000"
+    }
+  },
+  {
+    "id": "master-rfm",
+    "title": "RFM 分层大师",
+    "description": "掌握在线教育用户 RFM 分层分析，精准识别价值用户。",
+    "icon": "💎",
+    "points": 200,
+    "condition": {
+      "type": "courseCompleted",
+      "value": "online-education-rfm"
+    }
+  },
+  {
+    "id": "master-timeseries",
+    "title": "时间序列能手",
+    "description": "掌握访问量与销量时间序列预测，为业务决策提供支持。",
+    "icon": "📈",
+    "points": 200,
+    "condition": {
+      "type": "courseCompleted",
+      "value": "traffic-sales-timeseries"
+    }
+  },
+  {
+    "id": "master-nlp",
+    "title": "NLP 情感达人",
+    "description": "掌握课程评价 NLP 情感分析，挖掘评论价值。",
+    "icon": "🧠",
+    "points": 200,
+    "condition": {
+      "type": "courseCompleted",
+      "value": "review-nlp-sentiment"
+    }
+  },
+  {
+    "id": "master-apriori",
+    "title": "关联规则专家",
+    "description": "掌握 Apriori 课程关联规则分析，赋能课程推荐。",
+    "icon": "🎯",
+    "points": 200,
+    "condition": {
+      "type": "courseCompleted",
+      "value": "course-apriori"
+    }
+  },
+  {
+    "id": "master-persona",
+    "title": "用户画像行家",
+    "description": "掌握用户画像与精准运营策略，让营销更高效。",
+    "icon": "🏆",
+    "points": 200,
+    "condition": {
+      "type": "courseCompleted",
+      "value": "user-persona-operation"
+    }
+  },
+  {
+    "id": "all-chapters-read",
+    "title": "全面学习",
+    "description": "完成某门课程所有章节的学习，学习态度扎实。",
+    "icon": "📚",
+    "points": 150,
+    "condition": {
+      "type": "allChaptersRead",
+      "value": "1"
+    }
+  }
+]

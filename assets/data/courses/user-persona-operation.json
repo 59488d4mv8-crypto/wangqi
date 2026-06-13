@@ -1,0 +1,75 @@
+{
+  "id": "user-persona-operation",
+  "title": "用户画像与精准运营策略",
+  "summary": "通过聚类分析构建用户画像，结合画像特征输出针对不同群体的精准营销与运营策略建议。",
+  "skills": ["K-Means", "聚类", "用户画像"],
+  "difficulty": "进阶",
+  "hours": 10,
+  "chapters": [
+    {
+      "id": "ch1",
+      "title": "用户特征探索与可视化",
+      "sections": [
+        {"type": "text", "content": "先了解用户特征（年龄、消费、课程数、学习时长等）的分布情况。"},
+        {"type": "text", "content": "使用散点图探索年龄 vs 总消费的关联。"},
+        {"type": "code", "language": "python", "filename": "chapter1.py", "code": "import pandas as pd\nimport matplotlib.pyplot as plt\n\ndf = pd.read_csv('sample_data.csv')\nprint(df[['age', 'total_spent', 'courses_purchased', 'avg_study_hours']].describe().round(2))\n\nplt.rcParams['font.sans-serif'] = ['SimHei']\ndf.plot(x='age', y='total_spent', kind='scatter', color='#2E86AB', alpha=0.5, figsize=(8, 5))\nplt.title('年龄 vs 总消费')\nplt.tight_layout()\nplt.savefig('persona_scatter.png', dpi=150)"},
+        {"type": "text", "content": "特征探索为后续聚类提供依据。"},
+        {"type": "highlight", "content": "特征的分布与关系决定画像质量。"}
+      ],
+      "quiz": [
+        {"type": "single", "question": "用户画像的第一步通常是？", "options": ["A. 特征探索与清洗", "B. 建模", "C. 文本生成", "D. 图像识别"], "answer": "A", "explain": "先做数据探索与清洗。"},
+        {"type": "multiple", "question": "常见用户画像特征？", "options": ["A. 年龄", "B. 总消费", "C. 购买课程数", "D. 学习时长"], "answer": ["A", "B", "C", "D"], "explain": "均为常见画像维度。"},
+        {"type": "text", "question": "描述性统计函数名？", "answer": ["describe"], "explain": "describe()。"},
+        {"type": "code", "question": "补全代码：散点图", "codeSnippet": "df.plot(x='age', y='total_spent', kind='____')", "answerLines": ["scatter"], "explain": "scatter 散点图。"}
+      ]
+    },
+    {
+      "id": "ch2",
+      "title": "K-Means 聚类与画像生成",
+      "sections": [
+        {"type": "text", "content": "使用 K-Means 将用户分为若干群体，先标准化再聚类。"},
+        {"type": "text", "content": "设置 n_clusters 为合理的画像群体数。"},
+        {"type": "code", "language": "python", "filename": "chapter2.py", "code": "import pandas as pd\nfrom sklearn.preprocessing import StandardScaler\nfrom sklearn.cluster import KMeans\n\ndf = pd.read_csv('sample_data.csv')\nfeatures = ['age', 'total_spent', 'courses_purchased', 'avg_study_hours']\nX = df[features].fillna(0)\n\nscaler = StandardScaler()\nX_scaled = scaler.fit_transform(X)\nkm = KMeans(n_clusters=4, random_state=42, n_init=10)\ndf['cluster'] = km.fit_predict(X_scaled)\n\nprint('各群组用户数：')\nprint(df['cluster'].value_counts().sort_index())\nprint('各群组特征均值：')\nprint(df.groupby('cluster')[features].mean().round(2))"},
+        {"type": "text", "content": "各群体特征均值是解读画像的基础。"},
+        {"type": "highlight", "content": "聚类是构建画像的基础技术。"}
+      ],
+      "quiz": [
+        {"type": "single", "question": "K-Means 的 n_clusters 表示？", "options": ["A. 聚类数", "B. 样本数", "C. 特征数", "D. 迭代次数"], "answer": "A", "explain": "指定聚类数。"},
+        {"type": "multiple", "question": "聚类前必须做？", "options": ["A. 标准化", "B. 缺失值处理", "C. 去噪", "D. 文本分词"], "answer": ["A", "B", "C"], "explain": "文本分词与聚类无关。"},
+        {"type": "text", "question": "标准化函数名？", "answer": ["StandardScaler"], "explain": "StandardScaler。"},
+        {"type": "code", "question": "补全代码：聚类", "codeSnippet": "from sklearn.cluster import KMeans\nkm = KMeans(n_clusters=4, random_state=42)\nkm.____(X)", "answerLines": ["fit_predict"], "explain": "fit_predict。"}
+      ]
+    },
+    {
+      "id": "ch3",
+      "title": "画像解读与运营策略",
+      "sections": [
+        {"type": "text", "content": "基于聚类中心为各群体命名，如高价值学习者、轻度学习者、价格敏感型、老年学习者等。"},
+        {"type": "text", "content": "输出对应的运营策略建议。"},
+        {"type": "code", "language": "python", "filename": "chapter3.py", "code": "import pandas as pd\nfrom sklearn.preprocessing import StandardScaler\nfrom sklearn.cluster import KMeans\n\ndf = pd.read_csv('sample_data.csv')\nfeatures = ['age', 'total_spent', 'courses_purchased', 'avg_study_hours']\nX = df[features].fillna(0)\nscaler = StandardScaler()\nX_scaled = scaler.fit_transform(X)\nkm = KMeans(n_clusters=4, random_state=42, n_init=10)\ndf['cluster'] = km.fit_predict(X_scaled)\n\ncenters = df.groupby('cluster')[features].mean()\nprint('用户画像中心：')\nprint(centers.round(2))\n\nstrategies = {\n    '高价值学习者': '推送精品课程与 VIP 服务',\n    '轻度学习者': '推送入门与体验课',\n    '价格敏感型': '推送优惠券与限时折扣',\n    '老年学习者': '推送健康养生与兴趣课程'\n}\nfor c, s in strategies.items():\n    print(f'{c}：{s}')"},
+        {"type": "text", "content": "画像需要结合业务不断迭代更新。"},
+        {"type": "highlight", "content": "用户画像输出应直接转化为运营建议。"}
+      ],
+      "quiz": [
+        {"type": "single", "question": "聚类后生成群体特征用什么函数？", "options": ["A. groupby().mean()", "B. min()", "C. sum()", "D. count()"], "answer": "A", "explain": "按聚类分组取均值。"},
+        {"type": "multiple", "question": "常见用户画像命名？", "options": ["A. 高价值学习者", "B. 轻度学习者", "C. 价格敏感型", "D. 老年学习者"], "answer": ["A", "B", "C", "D"], "explain": "均为常见画像名称。"},
+        {"type": "text", "question": "画像输出的直接用途？", "answer": ["精准运营"], "explain": "精准运营。"},
+        {"type": "code", "question": "补全代码：分组均值", "codeSnippet": "df._____('cluster')[features].mean()", "answerLines": ["groupby"], "explain": "groupby 分组。"}
+      ]
+    }
+  ],
+  "finalExam": [
+    {"type": "single", "question": "用户画像的第一步？", "options": ["A. 数据探索", "B. 立即建模", "C. 绘图", "D. 文本输出"], "answer": "A", "explain": "先做数据探索。"},
+    {"type": "multiple", "question": "常见用户画像维度？", "options": ["A. 年龄", "B. 总消费", "C. 课程数", "D. 学习时长"], "answer": ["A", "B", "C", "D"], "explain": "均为常见维度。"},
+    {"type": "text", "question": "用于无监督分群的经典算法？", "answer": ["K-Means"], "explain": "K-Means。"},
+    {"type": "code", "question": "补全代码：KMeans", "codeSnippet": "from sklearn.cluster import ____", "answerLines": ["KMeans"], "explain": "KMeans 类。"},
+    {"type": "single", "question": "聚类前的必要步骤？", "options": ["A. 标准化", "B. 可视化", "C. 文本输出", "D. 打印"], "answer": "A", "explain": "必须标准化。"},
+    {"type": "multiple", "question": "画像的业务应用？", "options": ["A. 精准推送", "B. 个性化推荐", "C. 会员体系", "D. 销售预测"], "answer": ["A", "B", "C"], "explain": "销售预测不相关。"},
+    {"type": "text", "question": "聚类中心称为？", "answer": ["centroids"], "explain": "centroids。"},
+    {"type": "code", "question": "补全代码：标准化", "codeSnippet": "from sklearn.preprocessing import StandardScaler\nscaler = StandardScaler()\nscaler.____(X)", "answerLines": ["fit"], "explain": "fit。"},
+    {"type": "single", "question": "K-Means 的随机种子参数？", "options": ["A. random_state", "B. seed", "C. n_init", "D. tol"], "answer": "A", "explain": "random_state。"},
+    {"type": "multiple", "question": "聚类评估的常见方式？", "options": ["A. 业务解读", "B. 轮廓系数", "C. SSE 肘部法则", "D. F1"], "answer": ["A", "B", "C"], "explain": "F1 是分类指标。"},
+    {"type": "text", "question": "聚类结果可视化常用方法？", "answer": ["散点图", "t-SNE", "PCA"], "explain": "散点图或降维后的可视化。"},
+    {"type": "code", "question": "补全代码：聚类标签", "codeSnippet": "labels = km._____predict(X_scaled)", "answerLines": ["fit"], "explain": "fit_predict。"}
+  ]
+}

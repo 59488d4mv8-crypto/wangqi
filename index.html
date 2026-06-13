@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>首页 - 学习中心</title>
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<nav class="site-nav" aria-label="主导航">
+  <div class="nav-inner">
+    <a href="index.html" class="brand">学习中心</a>
+    <ul class="menu" role="menubar">
+      <li><a href="index.html" data-nav>首页</a></li>
+      <li><a href="courses.html" data-nav>课程</a></li>
+      <li><a href="achievements.html" data-nav>成就中心</a></li>
+    </ul>
+  </div>
+</nav>
+
+<main class="page">
+  <section class="hero">
+    <h1>欢迎来到在线学习中心</h1>
+    <p>从零基础到进阶实战，系统化学习让你的每一分钟都有效率。</p>
+    <a class="btn" href="courses.html">浏览课程</a>
+  </section>
+
+  <section class="section" id="dashboard-overview">
+    <div class="page-header">
+      <h2>学习中心</h2>
+      <p>概览当前学习状态、徽章与连续学习天数。</p>
+    </div>
+    <div class="card-grid" id="overview-cards"></div>
+  </section>
+
+  <section class="section" id="dashboard-continue">
+    <div class="page-header">
+      <h2>继续学习</h2>
+      <p id="continue-desc">推荐当前未完成或最近访问的课程。</p>
+    </div>
+    <div class="card-grid" id="continue-cards"></div>
+  </section>
+
+  <section class="section" id="dashboard-tools">
+    <div class="page-header">
+      <h2>学习记录</h2>
+      <p>导出当前浏览器的学习记录，或重置全部学习数据。</p>
+    </div>
+    <div class="card">
+      <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;">
+        <button class="btn" id="btn-export-record">导出学习记录 (JSON)</button>
+        <button class="btn btn-outline" id="btn-reset-record">重置全部学习记录</button>
+        <a class="btn btn-outline" href="achievements.html">前往成就中心</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="dashboard-recommend">
+    <div class="page-header">
+      <h2>推荐课程</h2>
+      <p>从前三门课程开始你的学习旅程。</p>
+    </div>
+    <div class="card-grid" id="recommend-cards"></div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <p>© <span data-current-year></span> 在线学习中心 · 保留所有权利</p>
+</footer>
+
+<script src="assets/js/storage.js"></script>
+<script src="assets/js/course.js"></script>
+<script src="assets/js/achievements.js"></script>
+<script src="assets/js/app.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  function statCard(label, value, hint) {
+    var card = document.createElement("div");
+    card.className = "stat-card card";
+
+    var title = document.createElement("h3");
+    title.textContent = label;
+    card.appendChild(title);
+
+    var val = document.createElement("div");
+    val.className = "stat-value";
+    val.textContent = value;
+    card.appendChild(val);
+
+    if (hint) {
+      var p = document.createElement("p");
+      p.className = "card-desc";
+      p.style.margin = "6px 0 0";
+      p.textContent = hint;
+      card.appendChild(p);
+    }
+
+    return card;
+  }
+
+  function renderOverview() {
+    var container = document.getElementById("overview-cards");
+    container.innerHTML = "";
+
+    var totalPoints = window.LearnStore.getTotalPoints();
+    var badges = window.LearnStore.getBadges();
+    var exams = window.LearnStore.getAllExamScores();
+    var passed = 0;
+    var keys = Object.keys(exams);
+    for (var i = 0; i < keys.length; i += 1) {
+      if (exams[keys[i]] && exams[keys[i]].passed) passed += 1;
+    }
+    var streak = window.LearnStore.getStreakDays();
+    var activeDays = window.LearnStore.getRecentVisitDays(7);
+
+    container.appendChild(statCard("总积分", totalPoints, "通过学习与获得徽章累计的积分"));
+    container.appendChild(statCard("已获得徽章", badges.length + " 枚", "在成就中心查看全部徽章"));
+    container.appendChild(statCard("通过课程", passed + " 门", "综合测评得分 ≥ 60 视为通过"));
+    container.appendChild(statCard("连续学习", streak + " 天", "每日访问课程即计入连续学习"));
+
+    var activityCard = document.createElement("div");
+    activityCard.className = "stat-card card";
+    activityCard.style.gridColumn = "1 / -1";
+
+    var actTitle = document.createElement("h3");
+    actTitle.textContent = "最近 7 天活跃天数";
+    activityCard.appendChild(actTitle);
+
+    var barChart = document.createElement("div");
+    barChart.className = "mini-bar-chart";
+    var maxH = 100;
+    for (var j = 0; j < activeDays.length; j += 1) {
+      var item = activeDays[j];
+      var bar = document.createElement("div");
+      bar.style.height = (item.visited ? maxH : 20) + "px";
+      if (item.visited) bar.classList.add("active");
+      var lbl = document.createElement("span");
+      lbl.textContent = item.label;
+      bar.appendChild(lbl);
+      barChart.appendChild(bar);
+    }
+    activityCard.appendChild(barChart);
+
+    var footer = document.createElement("p");
+    footer.className = "card-desc";
+    footer.style.margin = "10px 0 0";
+    var activeCount = 0;
+    for (var k = 0; k < activeDays.length; k += 1) if (activeDays[k].visited) activeCount += 1;
+    footer.textContent = "近 7 天活跃：" + activeCount + " 天（蓝色表示有访问记录）";
+    activityCard.appendChild(footer);
+
+    container.appendChild(activityCard);
+  }
+
+  function courseCard(course, subtitle) {
+    var card = document.createElement("div");
+    card.className = "card";
+
+    var title = document.createElement("h3");
+    title.className = "card-title";
+    title.textContent = course.title || "未命名课程";
+    card.appendChild(title);
+
+    if (subtitle) {
+      var sub = document.createElement("p");
+      sub.className = "card-desc";
+      sub.textContent = subtitle;
+      card.appendChild(sub);
+    }
+
+    if (course.summary) {
+      var p = document.createElement("p");
+      p.className = "card-desc";
+      p.textContent = course.summary;
+      card.appendChild(p);
+    }
+
+    var meta = document.createElement("div");
+    meta.className = "card-meta";
+    var diff = document.createElement("span");
+    diff.className = "tag";
+    diff.textContent = course.difficulty || "未分级";
+    meta.appendChild(diff);
+
+    var hours = document.createElement("span");
+    hours.className = "tag";
+    hours.textContent = (course.hours || 0) + " 小时";
+    meta.appendChild(hours);
+
+    var skills = Array.isArray(course.skills) ? course.skills : [];
+    for (var i = 0; i < Math.min(skills.length, 2); i += 1) {
+      var t = document.createElement("span");
+      t.className = "tag";
+      t.textContent = skills[i];
+      meta.appendChild(t);
+    }
+    card.appendChild(meta);
+
+    var link = document.createElement("a");
+    link.className = "btn btn-outline";
+    link.href = "course.html?id=" + encodeURIComponent(course.id);
+    link.textContent = "开始学习";
+    card.appendChild(link);
+
+    return card;
+  }
+
+  function renderContinue(index) {
+    var container = document.getElementById("continue-cards");
+    var desc = document.getElementById("continue-desc");
+    container.innerHTML = "";
+
+    var exams = window.LearnStore.getAllExamScores();
+    var recentIds = window.LearnStore.getRecentCourses();
+    var candidates = [];
+
+    if (index && Array.isArray(index)) {
+      for (var i = 0; i < index.length; i += 1) {
+        var id = index[i].id;
+        var exam = exams[id];
+        var passed = exam && exam.passed;
+        var score = exam ? exam.score : -1;
+        var recent = recentIds.indexOf(id);
+        candidates.push({ course: index[i], id: id, passed: !!passed, score: score, recent: recent });
+      }
+    }
+
+    var priority = candidates.slice().sort(function (a, b) {
+      if (a.passed !== b.passed) return a.passed ? 1 : -1;
+      if (a.score !== b.score) return (b.score || 0) - (a.score || 0);
+      if (a.recent !== b.recent) {
+        if (a.recent === -1 && b.recent === -1) return 0;
+        if (a.recent === -1) return 1;
+        if (b.recent === -1) return -1;
+        return a.recent - b.recent;
+      }
+      return 0;
+    });
+
+    var top = priority.slice(0, 3);
+    if (top.length === 0) {
+      var empty = document.createElement("div");
+      empty.className = "card";
+      empty.innerHTML = "<h3 class='card-title'>暂无学习记录</h3><p class='card-desc'>先到课程列表挑一门课程，开启学习之旅吧。</p><a class='btn btn-outline' href='courses.html'>去选课</a>";
+      container.appendChild(empty);
+      if (desc) desc.textContent = "尚未产生任何学习进度。";
+      return;
+    }
+
+    if (desc) desc.textContent = "优先推荐未通过 / 最近访问 / 得分最高的课程。";
+    for (var j = 0; j < top.length; j += 1) {
+      var c = top[j].course;
+      var subtitleBits = [];
+      if (top[j].passed) subtitleBits.push("已通过");
+      else if (top[j].score >= 0) subtitleBits.push("当前成绩 " + top[j].score + " 分");
+      else subtitleBits.push("学习中");
+      container.appendChild(courseCard(c, subtitleBits.join(" · ")));
+    }
+  }
+
+  function renderRecommend(index) {
+    var container = document.getElementById("recommend-cards");
+    container.innerHTML = "";
+    var list = Array.isArray(index) ? index.slice(0, 3) : [];
+    if (list.length === 0) {
+      var empty = document.createElement("div");
+      empty.className = "card";
+      empty.innerHTML = "<h3 class='card-title'>暂无课程</h3><p class='card-desc'>课程目录加载失败，请稍后再试。</p>";
+      container.appendChild(empty);
+      return;
+    }
+    for (var i = 0; i < list.length; i += 1) {
+      container.appendChild(courseCard(list[i], "精选推荐 · 第 " + (i + 1) + " 门"));
+    }
+  }
+
+  function bindTools() {
+    var exportBtn = document.getElementById("btn-export-record");
+    if (exportBtn) {
+      exportBtn.addEventListener("click", function () {
+        var data = window.LearnStore.exportData();
+        var blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json;charset=utf-8" });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement("a");
+        a.href = url;
+        a.download = "learn-record-" + new Date().toISOString().replace(/[:.]/g, "-") + ".json";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        if (window.showToast) window.showToast("已导出学习记录 JSON", "success");
+      });
+    }
+
+    var resetBtn = document.getElementById("btn-reset-record");
+    if (resetBtn) {
+      resetBtn.addEventListener("click", function () {
+        var confirmed = window.confirm("确认清空全部学习记录？此操作不可撤销。");
+        if (!confirmed) return;
+        window.LearnStore.resetAll();
+        if (window.showToast) window.showToast("已重置", "success");
+        renderOverview();
+        window.CourseData.loadIndex().then(function (index) {
+          renderContinue(index);
+          renderRecommend(index);
+        }).catch(function () {});
+      });
+    }
+  }
+
+  function init() {
+    var today = new Date().toISOString().slice(0, 10);
+    window.LearnStore.touchVisitDay(today);
+    renderOverview();
+    bindTools();
+
+    window.CourseData.loadIndex().then(function (index) {
+      renderContinue(index);
+      renderRecommend(index);
+    }).catch(function (err) {
+      var rec = document.getElementById("recommend-cards");
+      if (rec) rec.innerHTML = "<div class='card'><h3 class='card-title'>加载失败</h3><p class='card-desc'>课程目录加载失败：" + (err && err.message ? err.message : err) + "</p></div>";
+    });
+
+    if (window.Achievements && typeof window.Achievements.checkAll === "function") {
+      window.Achievements.checkAll(null).catch(function () {});
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", init);
+})();
+</script>
+</body>
+</html>

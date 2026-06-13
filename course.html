@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>课程详情 - 学习中心</title>
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<nav class="site-nav" aria-label="主导航">
+  <div class="nav-inner">
+    <a href="index.html" class="brand">学习中心</a>
+    <ul class="menu" role="menubar">
+      <li><a href="index.html" data-nav>首页</a></li>
+      <li><a href="courses.html" data-nav>课程</a></li>
+      <li><a href="achievements.html" data-nav>成就中心</a></li>
+    </ul>
+  </div>
+</nav>
+
+<main class="page">
+  <section id="course-header" class="section"></section>
+  <section id="course-body" class="section" style="display:none;">
+    <div class="course-layout">
+      <aside class="toc" aria-label="章节目录"></aside>
+      <div class="course-main" id="course-main"></div>
+    </div>
+  </section>
+  <section id="course-error" class="section" style="display:none;"></section>
+  <section id="course-learn-record" class="section" style="display:none;"></section>
+</main>
+
+<footer class="site-footer">
+  <p>© <span data-current-year></span> 在线学习中心 · 保留所有权利</p>
+</footer>
+
+<script src="assets/js/storage.js"></script>
+<script src="assets/js/course.js"></script>
+<script src="assets/js/achievements.js"></script>
+<script src="assets/js/app.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  var course = null;
+  var currentIndex = 0;
+  var currentView = "chapter";
+
+  function getCourseId() {
+    var hash = window.location.search.slice(1).split("&");
+    for (var i = 0; i < hash.length; i += 1) {
+      var kv = hash[i].split("=");
+      if (decodeURIComponent(kv[0]) === "id") return decodeURIComponent(kv[1] || "");
+    }
+    return "";
+  }
+
+  function levelTag(level) {
+    if (level === "入门") return "tag-level-easy";
+    if (level === "进阶") return "tag-level-mid";
+    if (level === "挑战") return "tag-level-hard";
+    return "";
+  }
+
+  function readProgress() {
+    return LearnStore.getChapterProgress(course.id).read;
+  }
+
+  function checkAchievements() {
+    if (window.Achievements && typeof window.Achievements.checkAll === "function") {
+      window.Achievements.checkAll(course).catch(function () {});
+    }
+  }
+
+  function renderHeader() {
+    var header = document.getElementById("course-header");
+    header.innerHTML = "";
+
+    var detail = document.createElement("div");
+    detail.className = "course-detail";
+
+    var title = document.createElement("h1");
+    title.textContent = course.title;
+    detail.appendChild(title);
+
+    var summary = document.createElement("p");
+    summary.textContent = course.summary;
+    detail.appendChild(summary);
+
+    var meta = document.createElement("div");
+    meta.className = "course-meta";
+
+    var level = document.createElement("span");
+    level.className = "tag " + levelTag(course.difficulty);
+    level.textContent = course.difficulty || "未分级";
+    meta.appendChild(level);
+
+    var hours = document.createElement("span");
+    hours.className = "tag";
+    hours.textContent = (course.hours || 0) + " 小时";
+    meta.appendChild(hours);
+
+    var skills = Array.isArray(course.skills) ? course.skills : [];
+    for (var s = 0; s < skills.length; s += 1) {
+      var t = document.createElement("span");
+      t.className = "tag";
+      t.textContent = skills[s];
+      meta.appendChild(t);
+    }
+    detail.appendChild(meta);
+
+    var progressWrap = document.createElement("div");
+    progressWrap.style.marginTop = "14px";
+    var read = readProgress();
+    var total = course.chapters ? course.chapters.length : 0;
+    var percent = total > 0 ? Math.round((read.size / total) * 100) : 0;
+    var label = document.createElement("div");
+    label.style.fontSize = "0.85rem";
+    label.style.color = "var(--color-text-light)";
+    label.style.marginBottom = "6px";
+    label.textContent = "学习进度：已读 " + read.size + " / " + total + " 章（" + percent + "%）";
+    progressWrap.appendChild(label);
+    var bar = document.createElement("div");
+    bar.className = "progress-bar";
+    var fill = document.createElement("span");
+    fill.style.width = percent + "%";
+    bar.appendChild(fill);
+    progressWrap.appendChild(bar);
+    detail.appendChild(progressWrap);
+
+    var actions = document.createElement("div");
+    actions.className = "course-meta";
+    actions.style.marginTop = "16px";
+
+    var res = course.resources || {};
+    if (res.python) {
+      var py = document.createElement("a");
+      py.className = "btn btn-outline";
+      py.href = res.python;
+      py.textContent = "下载 Python 脚本";
+      actions.appendChild(py);
+    }
+    if (res.notebook) {
+      var nb = document.createElement("a");
+      nb.className = "btn btn-outline";
+      nb.href = res.notebook;
+      nb.textContent = "下载 Notebook";
+      actions.appendChild(nb);
+    }
+    if (res.data) {
+      var dt = document.createElement("a");
+      dt.className = "btn btn-outline";
+      dt.href = res.data;
+      dt.textContent = "下载示例数据";
+      actions.appendChild(dt);
+    }
+    detail.appendChild(actions);
+
+    header.appendChild(detail);
+  }
+
+  function renderTOC() {
+    var toc = document.querySelector(".toc");
+    toc.innerHTML = "";
+    var h = document.createElement("h3");
+    h.textContent = "章节目录";
+    toc.appendChild(h);
+
+    var ul = document.createElement("ul");
+    var chapters = course.chapters || [];
+    var read = readProgress();
+    for (var i = 0; i < chapters.length; i += 1) {
+      var li = document.createElement("li");
+      var a = document.createElement("a");
+      a.href = "#ch" + (i + 1);
+      var mark = read.has(chapters[i].id) ? "✓ " : "";
+      a.textContent = mark + "第 " + (i + 1) + " 章 · " + (chapters[i].title || "未命名");
+      a.setAttribute("data-index", String(i));
+      if (currentView === "chapter" && i === currentIndex) a.classList.add("active");
+      (function (idx) {
+        a.addEventListener("click", function (ev) {
+          ev.preventDefault();
+          gotoChapter(idx);
+        });
+      })(i);
+      li.appendChild(a);
+      ul.appendChild(li);
+    }
+    toc.appendChild(ul);
+
+    var examA = document.createElement("a");
+    examA.href = "#exam";
+    examA.className = "exam";
+    examA.textContent = "进入综合测评";
+    if (currentView === "exam") examA.classList.add("active");
+    examA.addEventListener("click", function (ev) {
+      ev.preventDefault();
+      gotoExam();
+    });
+    toc.appendChild(examA);
+  }
+
+  function renderSections(chapter, container) {
+    var sections = chapter.sections || [];
+    for (var i = 0; i < sections.length; i += 1) {
+      var sec = sections[i];
+      if (sec.type === "text") {
+        var p = document.createElement("p");
+        p.textContent = sec.content || "";
+        container.appendChild(p);
+      } else if (sec.type === "highlight") {
+        var box = document.createElement("div");
+        box.className = "highlight-box";
+        box.textContent = sec.content || "";
+        container.appendChild(box);
+      } else if (sec.type === "code") {
+        var code = document.createElement("div");
+        code.className = "code-block";
+        var actions = document.createElement("div");
+        actions.className = "code-actions";
+        var copyBtn = document.createElement("button");
+        copyBtn.type = "button";
+        copyBtn.textContent = "复制";
+        (function (text) {
+          copyBtn.addEventListener("click", function () {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+              navigator.clipboard.writeText(text).then(function () {
+                if (window.showToast) window.showToast("已复制到剪贴板", "success");
+              }, function () {
+                if (window.showToast) window.showToast("复制失败", "error");
+              });
+            } else {
+              if (window.showToast) window.showToast("浏览器不支持剪贴板 API", "warning");
+            }
+          });
+        })(sec.code || "");
+
+        var dlBtn = document.createElement("button");
+        dlBtn.type = "button";
+        dlBtn.textContent = "下载 .py";
+        (function (text, name) {
+          dlBtn.addEventListener("click", function () {
+            try {
+              var blob = new Blob([text], { type: "text/x-python;charset=utf-8" });
+              var url = URL.createObjectURL(blob);
+              var anchor = document.createElement("a");
+              anchor.href = url;
+              anchor.download = name || "chapter.py";
+              document.body.appendChild(anchor);
+              anchor.click();
+              document.body.removeChild(anchor);
+              URL.revokeObjectURL(url);
+              if (window.showToast) window.showToast("已开始下载", "success");
+            } catch (e) {
+              if (window.showToast) window.showToast("下载失败", "error");
+            }
+          });
+        })(sec.code || "", sec.filename || ("chapter-" + (currentIndex + 1) + ".py"));
+
+        actions.appendChild(copyBtn);
+        actions.appendChild(dlBtn);
+        code.appendChild(actions);
+
+        var codeText = document.createElement("div");
+        codeText.textContent = sec.code || "";
+        code.appendChild(codeText);
+
+        container.appendChild(code);
+      }
+    }
+  }
+
+  function renderQuiz(quiz, container, quizIndex, prefix) {
+    var block = document.createElement("div");
+    block.className = "quiz-block";
+    block.setAttribute("data-quiz-index", String(quizIndex));
+
+    var title = document.createElement("div");
+    title.className = "q-title";
+    title.textContent = (quizIndex + 1) + ". " + (quiz.question || "题目");
+    block.appendChild(title);
+
+    var answerWrap = document.createElement("div");
+    answerWrap.className = "q-answer";
+    var type = quiz.type || "single";
+
+    if (type === "single") {
+      var options = quiz.options || [];
+      for (var i = 0; i < options.length; i += 1) {
+        var opt = document.createElement("div");
+        opt.className = "q-option";
+        opt.setAttribute("data-value", options[i]);
+        opt.textContent = options[i];
+        (function (node, val) {
+          node.addEventListener("click", function () {
+            var sib = block.querySelectorAll(".q-option");
+            for (var k = 0; k < sib.length; k += 1) sib[k].classList.remove("selected");
+            node.classList.add("selected");
+            block.setAttribute("data-user-answer", val);
+          });
+        })(opt, options[i]);
+        answerWrap.appendChild(opt);
+      }
+    } else if (type === "multiple") {
+      var opts = quiz.options || [];
+      for (var j = 0; j < opts.length; j += 1) {
+        var optM = document.createElement("div");
+        optM.className = "q-option";
+        optM.setAttribute("data-value", opts[j]);
+        optM.textContent = opts[j];
+        (function (node, val) {
+          node.addEventListener("click", function () {
+            node.classList.toggle("selected");
+            var sel = block.querySelectorAll(".q-option.selected");
+            var arr = [];
+            for (var k = 0; k < sel.length; k += 1) arr.push(sel[k].getAttribute("data-value"));
+            block.setAttribute("data-user-answer", JSON.stringify(arr));
+          });
+        })(optM, opts[j]);
+        answerWrap.appendChild(optM);
+      }
+    } else if (type === "text") {
+      var input = document.createElement("input");
+      input.type = "text";
+      input.placeholder = "请输入答案…";
+      input.addEventListener("input", function () {
+        block.setAttribute("data-user-answer", input.value);
+      });
+      answerWrap.appendChild(input);
+    } else if (type === "code") {
+      var codeSnippet = document.createElement("div");
+      codeSnippet.className = "code-block";
+      codeSnippet.textContent = quiz.codeSnippet || "";
+      answerWrap.appendChild(codeSnippet);
+
+      var ta = document.createElement("textarea");
+      ta.placeholder = "请逐行输入答案…";
+      ta.addEventListener("input", function () {
+        block.setAttribute("data-user-answer", ta.value);
+      });
+      answerWrap.appendChild(ta);
+    }
+
+    block.appendChild(answerWrap);
+
+    var explain = document.createElement("div");
+    explain.className = "q-explain";
+    explain.style.display = "none";
+    explain.textContent = quiz.explain ? "解析：" + quiz.explain : "";
+    block.appendChild(explain);
+
+    container.appendChild(block);
+  }
+
+  function getUserAnswer(block, type) {
+    var raw = block.getAttribute("data-user-answer") || "";
+    if (type === "multiple") {
+      try {
+        var arr = JSON.parse(raw);
+        return Array.isArray(arr) ? arr : [];
+      } catch (e) {
+        return [];
+      }
+    }
+    if (type === "code") {
+      if (!raw) return [];
+      return raw.split(/\r?\n/).filter(function (l) { return l.length > 0; });
+    }
+    return raw;
+  }
+
+  function markCorrectness(block, quiz, userAns, result) {
+    var type = quiz.type || "single";
+    if (type === "single") {
+      var options = block.querySelectorAll(".q-option");
+      for (var i = 0; i < options.length; i += 1) {
+        var val = options[i].getAttribute("data-value");
+        options[i].classList.remove("selected");
+        if (String(val) === String(quiz.answer)) options[i].classList.add("correct");
+        if (result && !result.correct && String(val) === String(userAns)) options[i].classList.add("wrong");
+      }
+    } else if (type === "multiple") {
+      var correctSet = {};
+      var answer = Array.isArray(quiz.answer) ? quiz.answer : [];
+      for (var a = 0; a < answer.length; a += 1) correctSet[answer[a]] = true;
+      var userSet = {};
+      var ua = Array.isArray(userAns) ? userAns : [];
+      for (var u = 0; u < ua.length; u += 1) userSet[ua[u]] = true;
+      var mopts = block.querySelectorAll(".q-option");
+      for (var m = 0; m < mopts.length; m += 1) {
+        var mv = mopts[m].getAttribute("data-value");
+        mopts[m].classList.remove("selected");
+        if (correctSet[mv]) mopts[m].classList.add("correct");
+        if (result && !result.correct && userSet[mv] && !correctSet[mv]) mopts[m].classList.add("wrong");
+      }
+    }
+    var explain = block.querySelector(".q-explain");
+    if (explain) explain.style.display = "block";
+  }
+
+  function renderChapter() {
+    var chapters = course.chapters || [];
+    var chapter = chapters[currentIndex];
+    var main = document.getElementById("course-main");
+    main.innerHTML = "";
+    if (!chapter) return;
+
+    LearnStore.markChapterRead(course.id, chapter.id);
+
+    var header = document.createElement("div");
+    header.className = "chapter-title";
+    var h2 = document.createElement("h2");
+    h2.textContent = "第 " + (currentIndex + 1) + " 章 · " + (chapter.title || "未命名章节");
+    header.appendChild(h2);
+
+    var chapterScore = LearnStore.getChapterScore(course.id, chapter.id);
+    if (chapterScore > 0) {
+      var sc = document.createElement("span");
+      sc.className = "tag";
+      sc.textContent = "历史得分：" + Math.round(chapterScore);
+      header.appendChild(sc);
+    }
+    main.appendChild(header);
+
+    renderSections(chapter, main);
+
+    var sep = document.createElement("div");
+    sep.className = "section-separator";
+    main.appendChild(sep);
+
+    var qHeading = document.createElement("h3");
+    qHeading.textContent = "本章练习";
+    main.appendChild(qHeading);
+
+    var quizContainer = document.createElement("div");
+    quizContainer.id = "chapter-quiz";
+    var quizzes = chapter.quiz || [];
+    for (var i = 0; i < quizzes.length; i += 1) {
+      renderQuiz(quizzes[i], quizContainer, i, "ch");
+    }
+    main.appendChild(quizContainer);
+
+    var submit = document.createElement("button");
+    submit.className = "btn";
+    submit.type = "button";
+    submit.textContent = "提交本章练习";
+    submit.addEventListener("click", function () {
+      var total = 0;
+      var blocks = quizContainer.querySelectorAll(".quiz-block");
+      for (var i = 0; i < blocks.length; i += 1) {
+        var q = quizzes[i];
+        var ans = getUserAnswer(blocks[i], q.type);
+        var result = CourseData.gradeQuizAnswer(q, ans);
+        markCorrectness(blocks[i], q, ans, result);
+        total += result.score;
+      }
+      var prevScore = LearnStore.getChapterScore(course.id, chapter.id) || 0;
+      var score = blocks.length > 0 ? Math.round(total / blocks.length) : 0;
+      LearnStore.saveChapterScore(course.id, chapter.id, score);
+      if (prevScore < 80 && score >= 80) {
+        LearnStore.addPoints(20, "chapterHighScore:" + course.id + ":" + chapter.id);
+        if (window.showToast) window.showToast("本章首次获得 " + score + " 分，+20 积分", "success");
+      } else {
+        if (window.showToast) window.showToast("本章得分：" + score + " 分", score >= 60 ? "success" : "warning");
+      }
+      renderHeader();
+      renderTOC();
+      checkAchievements();
+    });
+    main.appendChild(submit);
+
+    var nav = document.createElement("div");
+    nav.className = "chapter-nav";
+    var prev = document.createElement("button");
+    prev.className = "btn btn-outline";
+    prev.type = "button";
+    prev.textContent = currentIndex > 0 ? "← 上一章" : "← 回到课程列表";
+    prev.addEventListener("click", function () {
+      if (currentIndex > 0) gotoChapter(currentIndex - 1);
+      else window.location.href = "courses.html";
+    });
+    var next = document.createElement("button");
+    next.className = "btn";
+    next.type = "button";
+    if (currentIndex < chapters.length - 1) {
+      next.textContent = "下一章 →";
+      next.addEventListener("click", function () { gotoChapter(currentIndex + 1); });
+    } else {
+      next.textContent = "进入综合测评 →";
+      next.addEventListener("click", function () { gotoExam(); });
+    }
+    nav.appendChild(prev);
+    nav.appendChild(next);
+    main.appendChild(nav);
+  }
+
+  function renderExam() {
+    var main = document.getElementById("course-main");
+    main.innerHTML = "";
+
+    var top = document.createElement("div");
+    top.className = "exam-header";
+    var h2 = document.createElement("h2");
+    h2.textContent = "综合测评";
+    top.appendChild(h2);
+    var tip = document.createElement("div");
+    tip.textContent = "完成下面全部题目，点击『提交』后即可获得得分。总分 ≥ 60 视为通过。";
+    top.appendChild(tip);
+    main.appendChild(top);
+
+    var last = LearnStore.getExamScore(course.id);
+    if (last) {
+      var lastBox = document.createElement("div");
+      lastBox.className = "card";
+      lastBox.style.padding = "14px 16px";
+      lastBox.style.marginBottom = "12px";
+      lastBox.innerHTML = "<span class='tag' style='background:#eef2ff;color:var(--color-primary);'>上次得分 · " + Math.round(last.score) + " · " + (last.passed ? "已通过" : "未通过") + "</span> <span style='margin-left:12px;color:var(--color-text-light);font-size:0.85rem;'>日期：" + (last.date || "-") + "</span>";
+      main.appendChild(lastBox);
+    }
+
+    var quizContainer = document.createElement("div");
+    quizContainer.id = "exam-quiz";
+    var exam = course.finalExam || [];
+    if (exam.length === 0) {
+      var empty = document.createElement("p");
+      empty.textContent = "课程尚未提供综合测评。";
+      empty.style.color = "var(--color-text-light)";
+      main.appendChild(empty);
+      return;
+    }
+    for (var i = 0; i < exam.length; i += 1) {
+      renderQuiz(exam[i], quizContainer, i, "exam");
+    }
+    main.appendChild(quizContainer);
+
+    var submit = document.createElement("button");
+    submit.className = "btn";
+    submit.type = "button";
+    submit.textContent = "提交综合测评";
+    submit.addEventListener("click", function () {
+      var total = 0;
+      var blocks = quizContainer.querySelectorAll(".quiz-block");
+      for (var i = 0; i < blocks.length; i += 1) {
+        var q = exam[i];
+        var ans = getUserAnswer(blocks[i], q.type);
+        var result = CourseData.gradeQuizAnswer(q, ans);
+        markCorrectness(blocks[i], q, ans, result);
+        total += result.score;
+      }
+      var prev = LearnStore.getExamScore(course.id);
+      var prevPassed = !!(prev && prev.passed);
+      var score = blocks.length > 0 ? Math.round(total / blocks.length) : 0;
+      var passed = score >= 60;
+      var dateStr = new Date().toISOString().slice(0, 10);
+      LearnStore.saveExamScore(course.id, score, passed, dateStr);
+
+      if (passed && !prevPassed) {
+        LearnStore.addPoints(50, "examPassed:" + course.id);
+        if (window.showToast) window.showToast("首次通过综合测评，+50 积分！", "success");
+      }
+      if (score === 100) {
+        LearnStore.addPoints(100, "examFullScore:" + course.id);
+        if (window.showToast) window.showToast("综合测评满分，+100 积分！", "success");
+      } else if (window.showToast) {
+        window.showToast("综合测评得分：" + score + (passed ? "，已通过" : "，未通过"), passed ? "success" : "warning");
+      }
+
+      var summary = document.createElement("div");
+      summary.className = "exam-summary";
+      summary.innerHTML = "<div>本次得分</div><div class='score'>" + score + "</div><div>" + (passed ? "🎉 恭喜通过综合测评！" : "尚未通过，可再次学习后重试。") + "</div>";
+      main.appendChild(summary);
+
+      window.dispatchEvent(new CustomEvent("learn:examDone", { detail: { courseId: course.id, score: score, passed: passed } }));
+      renderHeader();
+      renderTOC();
+      checkAchievements();
+    });
+    main.appendChild(submit);
+
+    var back = document.createElement("div");
+    back.className = "chapter-nav";
+    var backBtn = document.createElement("button");
+    backBtn.className = "btn btn-outline";
+    backBtn.type = "button";
+    backBtn.textContent = "← 返回最后一章";
+    backBtn.addEventListener("click", function () {
+      var lastIdx = (course.chapters || []).length - 1;
+      if (lastIdx >= 0) gotoChapter(lastIdx);
+    });
+    back.appendChild(backBtn);
+    main.appendChild(back);
+  }
+
+  function renderLearnRecord() {
+    var section = document.getElementById("course-learn-record");
+    section.style.display = "block";
+    section.innerHTML = "";
+
+    var card = document.createElement("div");
+    card.className = "card";
+
+    var title = document.createElement("h3");
+    title.className = "card-title";
+    title.textContent = "学习记录";
+    card.appendChild(title);
+
+    var desc = document.createElement("p");
+    desc.className = "card-desc";
+    desc.textContent = "导出当前浏览器的学习记录，或重置全部学习数据（徽章、积分、进度、成绩均会清空）。";
+    card.appendChild(desc);
+
+    var actions = document.createElement("div");
+    actions.style.display = "flex";
+    actions.style.flexWrap = "wrap";
+    actions.style.gap = "10px";
+
+    var exportBtn = document.createElement("button");
+    exportBtn.className = "btn";
+    exportBtn.type = "button";
+    exportBtn.textContent = "导出学习记录 (JSON)";
+    exportBtn.addEventListener("click", function () {
+      var data = window.LearnStore.exportData();
+      var blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json;charset=utf-8" });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement("a");
+      a.href = url;
+      a.download = "learn-record-" + new Date().toISOString().replace(/[:.]/g, "-") + ".json";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      if (window.showToast) window.showToast("已导出学习记录 JSON", "success");
+    });
+
+    var resetBtn = document.createElement("button");
+    resetBtn.className = "btn btn-outline";
+    resetBtn.type = "button";
+    resetBtn.textContent = "重置全部学习记录";
+    resetBtn.addEventListener("click", function () {
+      var confirmed = window.confirm("确认清空全部学习记录？此操作不可撤销。");
+      if (!confirmed) return;
+      window.LearnStore.resetAll();
+      if (window.showToast) window.showToast("已重置", "success");
+      renderHeader();
+      renderTOC();
+      if (currentView === "chapter") renderChapter();
+      else if (currentView === "exam") renderExam();
+    });
+
+    actions.appendChild(exportBtn);
+    actions.appendChild(resetBtn);
+    card.appendChild(actions);
+
+    section.appendChild(card);
+  }
+
+  function gotoChapter(idx) {
+    currentIndex = idx;
+    currentView = "chapter";
+    if (!window.location.hash || window.location.hash !== "#ch" + (idx + 1)) {
+      history.replaceState(null, "", "#ch" + (idx + 1));
+    }
+    document.getElementById("course-body").style.display = "block";
+    renderTOC();
+    renderChapter();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function gotoExam() {
+    currentView = "exam";
+    history.replaceState(null, "", "#exam");
+    document.getElementById("course-body").style.display = "block";
+    renderTOC();
+    renderExam();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function showError(msg) {
+    var err = document.getElementById("course-error");
+    document.getElementById("course-body").style.display = "none";
+    err.style.display = "block";
+    err.innerHTML = "<div class='card' style='text-align:center;padding:40px 20px;'><h2>课程未找到</h2><p style='color:var(--color-text-light);'>" + msg + "</p><a class='btn btn-outline' href='courses.html'>返回课程列表</a></div>";
+  }
+
+  function parseHash() {
+    var h = window.location.hash || "";
+    if (h === "#exam") return { view: "exam" };
+    var m = h.match(/^#ch(\d+)$/);
+    if (m) {
+      var idx = parseInt(m[1], 10) - 1;
+      return { view: "chapter", index: idx };
+    }
+    return null;
+  }
+
+  function init() {
+    var id = getCourseId();
+    if (!id) {
+      showError("请通过课程列表选择一门课程。");
+      return;
+    }
+    var title = document.querySelector("title");
+    if (title) title.textContent = "课程详情 - 学习中心";
+
+    CourseData.loadById(id).then(function (data) {
+      course = data;
+      document.title = (course.title || "课程") + " - 学习中心";
+      renderHeader();
+      document.getElementById("course-body").style.display = "block";
+
+      var target = parseHash();
+      if (target && target.view === "exam") {
+        currentView = "exam";
+        currentIndex = (course.chapters || []).length - 1;
+        renderTOC();
+        renderExam();
+      } else {
+        var idx = (target && target.view === "chapter" && target.index >= 0 && target.index < (course.chapters || []).length) ? target.index : 0;
+        currentIndex = idx;
+        currentView = "chapter";
+        renderTOC();
+        renderChapter();
+      }
+
+      renderLearnRecord();
+
+      var today = new Date().toISOString().slice(0, 10);
+      LearnStore.touchVisitDay(today);
+      checkAchievements();
+    }).catch(function (err) {
+      showError("加载课程失败：" + err.message);
+    });
+  }
+
+  window.addEventListener("hashchange", function () {
+    if (!course) return;
+    var target = parseHash();
+    if (!target) return;
+    if (target.view === "exam") gotoExam();
+    else if (target.index != null) gotoChapter(target.index);
+  });
+
+  init();
+})();
+</script>
+</body>
+</html>

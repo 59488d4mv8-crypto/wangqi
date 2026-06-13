@@ -1,0 +1,75 @@
+{
+  "id": "study-time-score-correlation",
+  "title": "学生学习时长与成绩相关性分析",
+  "summary": "运用相关性分析、线性回归探索学习时长、听课次数与课程成绩的关系，并用散点图可视化呈现。",
+  "skills": ["相关性分析", "线性回归", "Scipy"],
+  "difficulty": "入门",
+  "hours": 8,
+  "chapters": [
+    {
+      "id": "ch1",
+      "title": "数据探索与散点图",
+      "sections": [
+        {"type": "text", "content": "通过数据探索了解学习时长与成绩的分布情况。使用 describe() 获得描述性统计。"},
+        {"type": "text", "content": "绘制学习时长与成绩散点图，观察两变量间是否存在线性关系。"},
+        {"type": "code", "language": "python", "filename": "chapter1.py", "code": "import pandas as pd\nimport matplotlib.pyplot as plt\n\ndf = pd.read_csv('sample_data.csv')\nprint(df.head(3))\nprint(df[['study_hours', 'score']].describe().round(2))\n\nplt.rcParams['font.sans-serif'] = ['SimHei']\ndf.plot(x='study_hours', y='score', kind='scatter', color='#2E86AB', alpha=0.6, figsize=(8, 5))\nplt.title('学习时长 vs 成绩')\nplt.xlabel('每周学习时长（小时）')\nplt.ylabel('课程成绩')\nplt.tight_layout()\nplt.savefig('scatter.png', dpi=150)"},
+        {"type": "text", "content": "散点图可直观显示学习时长与成绩的关系趋势。"},
+        {"type": "highlight", "content": "散点图是探索双变量关系的基础工具。"}
+      ],
+      "quiz": [
+        {"type": "single", "question": "展示两个连续变量关系的图表是？", "options": ["A. 散点图", "B. 饼图", "C. 折线图", "D. 直方图"], "answer": "A", "explain": "散点图展示两个连续变量关系。"},
+        {"type": "multiple", "question": "数据探索常见步骤？", "options": ["A. head()", "B. describe()", "C. info()", "D. 聚类建模"], "answer": ["A", "B", "C"], "explain": "聚类建模是建模阶段。"},
+        {"type": "text", "question": "获得描述性统计用什么方法？", "answer": ["describe"], "explain": "describe() 输出描述性统计。"},
+        {"type": "code", "question": "补全代码：散点图", "codeSnippet": "import matplotlib.pyplot as plt\ndf.plot(x='study_hours', y='score', kind='____')", "answerLines": ["scatter"], "explain": "kind='scatter' 绘制散点图。"}
+      ]
+    },
+    {
+      "id": "ch2",
+      "title": "Pearson 与 Spearman 相关系数",
+      "sections": [
+        {"type": "text", "content": "使用 Pearson 与 Spearman 相关系数量化学习时长与成绩之间的线性或单调关系。"},
+        {"type": "text", "content": "p 值用于判断相关性是否统计显著，通常 < 0.05 视为显著。"},
+        {"type": "code", "language": "python", "filename": "chapter2.py", "code": "import pandas as pd\nfrom scipy.stats import pearsonr, spearmanr\n\ndf = pd.read_csv('sample_data.csv')\nr_pearson, p_pearson = pearsonr(df['study_hours'], df['score'])\nr_spearman, p_spearman = spearmanr(df['study_hours'], df['score'])\n\nprint(f'Pearson 相关系数：{r_pearson:.4f} (p={p_pearson:.4f})')\nprint(f'Spearman 相关系数：{r_spearman:.4f} (p={p_spearman:.4f})')\n\ncorr_matrix = df[['study_hours', 'attendance', 'score', 'homework']].corr().round(3)\nprint('相关矩阵：')\nprint(corr_matrix)"},
+        {"type": "text", "content": "通过相关矩阵可以探索多变量之间的相关关系。"},
+        {"type": "highlight", "content": "相关系数范围 -1 到 1，绝对值越大相关性越强。"}
+      ],
+      "quiz": [
+        {"type": "single", "question": "Pearson 相关系数衡量什么？", "options": ["A. 线性关系", "B. 因果关系", "C. 非线性关系", "D. 时间关系"], "answer": "A", "explain": "Pearson 衡量线性相关。"},
+        {"type": "multiple", "question": "常用相关性分析函数？", "options": ["A. pearsonr", "B. spearmanr", "C. corr()", "D. fit()"], "answer": ["A", "B", "C"], "explain": "fit() 是模型训练。"},
+        {"type": "text", "question": "Pearson 相关系数的取值范围？", "answer": ["-1到1"], "explain": "-1 到 1。"},
+        {"type": "code", "question": "补全代码：Pearson 相关", "codeSnippet": "from scipy.stats import pearsonr\nr, p = pearsonr(df['study_hours'], df['score'])", "answerLines": ["pearsonr"], "explain": "使用 pearsonr 计算。"}
+      ]
+    },
+    {
+      "id": "ch3",
+      "title": "线性回归建模与解读",
+      "sections": [
+        {"type": "text", "content": "使用线性回归模型探索多个自变量（学习时长、出勤率、作业量）对成绩的影响。"},
+        {"type": "text", "content": "输出回归系数、R 平方与 RMSE 评估模型。"},
+        {"type": "code", "language": "python", "filename": "chapter3.py", "code": "import pandas as pd\nimport numpy as np\nfrom sklearn.linear_model import LinearRegression\nfrom sklearn.metrics import r2_score, mean_squared_error\n\ndf = pd.read_csv('sample_data.csv')\nX = df[['study_hours', 'attendance', 'homework']].values\ny = df['score'].values\n\nmodel = LinearRegression()\nmodel.fit(X, y)\ny_pred = model.predict(X)\n\nprint('截距：%.3f' % model.intercept_)\nprint('回归系数：', model.coef_.round(3))\nprint('R^2：%.4f' % r2_score(y, y_pred))\nprint('RMSE：%.4f' % np.sqrt(mean_squared_error(y, y_pred)))"},
+        {"type": "text", "content": "根据回归系数解读各因素的影响程度与方向。"},
+        {"type": "highlight", "content": "R 平方越接近 1 表示模型解释能力越强。"}
+      ],
+      "quiz": [
+        {"type": "single", "question": "线性回归中的 R 平方表示？", "options": ["A. 可解释方差比例", "B. 回归系数", "C. 相关系数", "D. p 值"], "answer": "A", "explain": "可解释方差比例。"},
+        {"type": "multiple", "question": "线性回归常见假设？", "options": ["A. 线性关系", "B. 残差正态", "C. 同方差", "D. 特征独立"], "answer": ["A", "B", "C", "D"], "explain": "均为经典假设。"},
+        {"type": "text", "question": "线性回归拟合方法名？", "answer": ["fit"], "explain": "fit 方法拟合模型。"},
+        {"type": "code", "question": "补全代码：线性回归", "codeSnippet": "from sklearn.linear_model import LinearRegression\nmodel = LinearRegression()\nmodel.____(X, y)", "answerLines": ["fit"], "explain": "fit 方法拟合。"}
+      ]
+    }
+  ],
+  "finalExam": [
+    {"type": "single", "question": "相关系数 r = 0.8 表示？", "options": ["A. 较强正相关", "B. 较弱负相关", "C. 无相关", "D. 完全相关"], "answer": "A", "explain": "r > 0.7 通常认为较强相关。"},
+    {"type": "multiple", "question": "评价回归模型的常见指标？", "options": ["A. R^2", "B. RMSE", "C. MAE", "D. F1"], "answer": ["A", "B", "C"], "explain": "F1 是分类指标。"},
+    {"type": "text", "question": "正的回归系数表示？", "answer": ["正相关"], "explain": "正向关系。"},
+    {"type": "code", "question": "补全代码：预测", "codeSnippet": "y_pred = model.____(X)", "answerLines": ["predict"], "explain": "predict 方法预测。"},
+    {"type": "single", "question": "p 值 < 0.05 通常表示？", "options": ["A. 统计显著", "B. 不显著", "C. 完全相关", "D. 无法判断"], "answer": "A", "explain": "通常 0.05 为显著性阈值。"},
+    {"type": "multiple", "question": "影响成绩的因素？", "options": ["A. 学习时长", "B. 出勤率", "C. 作业完成", "D. 身高"], "answer": ["A", "B", "C"], "explain": "身高与成绩无直接关系。"},
+    {"type": "text", "question": "相关分析能否直接证明因果？", "answer": ["不能"], "explain": "相关不等于因果。"},
+    {"type": "code", "question": "补全代码：相关矩阵", "codeSnippet": "df[['a', 'b', 'c']].____()", "answerLines": ["corr"], "explain": "corr() 计算相关矩阵。"},
+    {"type": "single", "question": "RMSE 越小表示？", "options": ["A. 模型越好", "B. 模型越差", "C. 无意义", "D. 过拟合"], "answer": "A", "explain": "均方根误差越小预测越准。"},
+    {"type": "multiple", "question": "回归分析常见应用？", "options": ["A. 预测", "B. 归因分析", "C. 趋势识别", "D. 文本生成"], "answer": ["A", "B", "C"], "explain": "文本生成是 NLP 任务。"},
+    {"type": "text", "question": "线性回归的英文名称？", "answer": ["Linear Regression"], "explain": "Linear Regression。"},
+    {"type": "code", "question": "补全代码：RMSE 计算", "codeSnippet": "import numpy as np\nfrom sklearn.metrics import mean_squared_error\nrmse = np.____(mean_squared_error(y, y_pred))", "answerLines": ["sqrt"], "explain": "开平方取 sqrt。"}
+  ]
+}

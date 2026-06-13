@@ -1,0 +1,75 @@
+{
+  "id": "course-completion-dropout",
+  "title": "课程学习完成度与 dropout 流失预测",
+  "summary": "使用逻辑回归等模型对在线课程流失行为进行预测，识别高风险学员并制定干预策略。",
+  "skills": ["Scikit-learn", "分类模型", "特征工程"],
+  "difficulty": "进阶",
+  "hours": 10,
+  "chapters": [
+    {
+      "id": "ch1",
+      "title": "课程完成度与流失率统计",
+      "sections": [
+        {"type": "text", "content": "课程完成度 = 已完成章节 / 总章节。第一步先统计各课程的完成度与流失率分布。"},
+        {"type": "text", "content": "按课程分组统计每个课程的平均完成度、平均流失率。"},
+        {"type": "code", "language": "python", "filename": "chapter1.py", "code": "import pandas as pd\nimport matplotlib.pyplot as plt\n\ndf = pd.read_csv('sample_data.csv')\nstats = df.groupby('course_id').agg(\n    total_users=('user_id', 'count'),\n    dropout_users=('is_dropout', 'sum'),\n    avg_progress=('progress', 'mean')\n).reset_index()\nstats['dropout_rate'] = stats['dropout_users'] / stats['total_users']\n\nplt.rcParams['font.sans-serif'] = ['SimHei']\nstats.plot(x='course_id', y='dropout_rate', kind='bar', color='#C73E1D', figsize=(10, 4))\nplt.title('各课程流失率')\nplt.ylabel('流失率')\nplt.xticks(rotation=45)\nplt.tight_layout()\nplt.savefig('dropout_rate.png', dpi=150)\nprint(stats.round(3))"},
+        {"type": "text", "content": "结果输出各课程流失率柱状图，识别流失率偏高的课程。"},
+        {"type": "highlight", "content": "先做描述统计，是数据分析的起点。"}
+      ],
+      "quiz": [
+        {"type": "single", "question": "计算流失率最常用的公式是？", "options": ["A. 流失用户数 / 总用户数", "B. 流失用户数 * 总用户数", "C. 总用户数 / 流失用户数", "D. 总用户数 + 流失用户数"], "answer": "A", "explain": "流失率 = 流失用户 / 总用户。"},
+        {"type": "multiple", "question": "影响课程流失率的因素包括？", "options": ["A. 课程难度", "B. 讲师质量", "C. 作业量", "D. 平台 UI"], "answer": ["A", "B", "C", "D"], "explain": "均影响用户体验。"},
+        {"type": "text", "question": "Pandas 按课程分组使用什么方法？", "answer": ["groupby"], "explain": "groupby 用于分组聚合。"},
+        {"type": "code", "question": "补全代码：流失率", "codeSnippet": "import pandas as pd\ndf = pd.read_csv('data.csv')\nstats = df.groupby('course_id').agg(total=('user_id','count'), dropout=('is_dropout','sum'))\nstats['dropout_rate'] = stats['dropout'] ____ stats['total']", "answerLines": ["/"], "explain": "除法运算符 / 计算比率。"}
+      ]
+    },
+    {
+      "id": "ch2",
+      "title": "特征工程与逻辑回归建模",
+      "sections": [
+        {"type": "text", "content": "特征工程是建模的关键步骤。常用特征包括学习时长、学习进度、作业成绩等。"},
+        {"type": "text", "content": "使用逻辑回归建立流失预测模型，并计算准确率与分类报告。"},
+        {"type": "code", "language": "python", "filename": "chapter2.py", "code": "import pandas as pd\nfrom sklearn.linear_model import LogisticRegression\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.metrics import accuracy_score, classification_report\n\ndf = pd.read_csv('sample_data.csv')\nX = df[['study_hours', 'progress', 'quiz_score', 'assign_score']].fillna(0)\ny = df['is_dropout'].astype(int)\n\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)\nmodel = LogisticRegression(max_iter=500)\nmodel.fit(X_train, y_train)\ny_pred = model.predict(X_test)\n\nprint('准确率：%.3f' % accuracy_score(y_test, y_pred))\nprint(classification_report(y_test, y_pred))\nprint('特征权重：', dict(zip(X.columns, model.coef_[0].round(3))))"},
+        {"type": "text", "content": "分析模型的系数权重，识别影响流失的关键特征。"},
+        {"type": "highlight", "content": "特征工程决定模型上限。"}
+      ],
+      "quiz": [
+        {"type": "single", "question": "逻辑回归属于哪类模型？", "options": ["A. 分类模型", "B. 回归模型", "C. 聚类模型", "D. 降维模型"], "answer": "A", "explain": "经典二分类模型。"},
+        {"type": "multiple", "question": "分类模型常用的评估指标？", "options": ["A. 准确率", "B. 召回率", "C. F1 分数", "D. R 平方"], "answer": ["A", "B", "C"], "explain": "R 平方是回归指标。"},
+        {"type": "text", "question": "train_test_split 中的 test_size 一般设置为？", "answer": ["0.2", "0.3"], "explain": "一般 20% ~ 30%。"},
+        {"type": "code", "question": "补全代码：切分数据集", "codeSnippet": "from sklearn.model_selection import train_test_split\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)", "answerLines": ["train_test_split"], "explain": "切分训练集和测试集。"}
+      ]
+    },
+    {
+      "id": "ch3",
+      "title": "随机森林与高风险学员识别",
+      "sections": [
+        {"type": "text", "content": "随机森林是更强大的集成学习模型，能处理复杂非线性关系并给出特征重要性。"},
+        {"type": "text", "content": "识别预测概率 > 0.7 的学员为高风险学员，可对他们进行推送与课程优化。"},
+        {"type": "code", "language": "python", "filename": "chapter3.py", "code": "import pandas as pd\nfrom sklearn.ensemble import RandomForestClassifier\nfrom sklearn.model_selection import train_test_split\nfrom sklearn.metrics import roc_auc_score\n\ndf = pd.read_csv('sample_data.csv')\nX = df[['study_hours', 'progress', 'quiz_score', 'assign_score', 'days_inactive']].fillna(0)\ny = df['is_dropout'].astype(int)\nX_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)\n\nclf = RandomForestClassifier(n_estimators=100, random_state=42)\nclf.fit(X_train, y_train)\ny_prob = clf.predict_proba(X_test)[:, 1]\n\nprint('AUC：%.3f' % roc_auc_score(y_test, y_prob))\nprint('特征重要性：')\nfor name, imp in sorted(zip(X.columns, clf.feature_importances_), key=lambda x: -x[1]):\n    print(f'  {name}: {imp:.3f}')"},
+        {"type": "text", "content": "输出特征重要性排序，给出课程与运营策略建议。"},
+        {"type": "highlight", "content": "集成模型的特征重要性是业务洞察利器。"}
+      ],
+      "quiz": [
+        {"type": "single", "question": "随机森林的 n_estimators 参数表示？", "options": ["A. 树的数量", "B. 最大深度", "C. 特征数", "D. 学习率"], "answer": "A", "explain": "决策树的数量。"},
+        {"type": "multiple", "question": "高风险学员的干预策略包括？", "options": ["A. 推送提醒", "B. 课程改进", "C. 社群激励", "D. 优惠券奖励"], "answer": ["A", "B", "C", "D"], "explain": "均是常见干预手段。"},
+        {"type": "text", "question": "AUC 越接近 1 表示模型？", "answer": ["越好", "性能越好"], "explain": "AUC 越高模型表现越好。"},
+        {"type": "code", "question": "补全代码：特征重要性", "codeSnippet": "from sklearn.ensemble import RandomForestClassifier\nclf = RandomForestClassifier(n_estimators=100, random_state=42)\nclf.fit(X_train, y_train)\nimportances = clf.____importances_", "answerLines": ["feature_"], "explain": "feature_importances_ 属性。"}
+      ]
+    }
+  ],
+  "finalExam": [
+    {"type": "single", "question": "逻辑回归输出什么？", "options": ["A. 概率", "B. 连续数值", "C. 聚类标签", "D. 降维结果"], "answer": "A", "explain": "输出类别概率。"},
+    {"type": "multiple", "question": "常见分类指标包括？", "options": ["A. 准确率", "B. 召回率", "C. F1", "D. MAE"], "answer": ["A", "B", "C"], "explain": "MAE 是回归指标。"},
+    {"type": "text", "question": "train_test_split 的中文含义是？", "answer": ["训练集测试集切分"], "explain": "划分数据集为训练与测试集。"},
+    {"type": "code", "question": "补全代码：逻辑回归", "codeSnippet": "from sklearn.linear_model import ____\nmodel = LogisticRegression(max_iter=500)\nmodel.fit(X_train, y_train)", "answerLines": ["LogisticRegression"], "explain": "导入逻辑回归类。"},
+    {"type": "single", "question": "ROC-AUC 的取值范围是？", "options": ["A. 0 ~ 1", "B. -1 ~ 1", "C. 0 ~ 无穷大", "D. 1 ~ 10"], "answer": "A", "explain": "AUC 在 0 到 1 之间。"},
+    {"type": "multiple", "question": "特征工程包括？", "options": ["A. 缺失值填充", "B. 特征缩放", "C. 类别编码", "D. 特征交叉"], "answer": ["A", "B", "C", "D"], "explain": "均为常见步骤。"},
+    {"type": "text", "question": "n_estimators 是指？", "answer": ["树的数量"], "explain": "随机森林中决策树数量。"},
+    {"type": "code", "question": "补全代码：随机森林", "codeSnippet": "from sklearn.ensemble import ____\nclf = RandomForestClassifier(n_estimators=100)", "answerLines": ["RandomForestClassifier"], "explain": "随机森林分类器。"},
+    {"type": "single", "question": "is_dropout 字段一般是？", "options": ["A. 布尔值", "B. 浮点数", "C. 字符串", "D. 日期"], "answer": "A", "explain": "是否流失为布尔型。"},
+    {"type": "multiple", "question": "分类模型的输出包括？", "options": ["A. 预测标签", "B. 预测概率", "C. 特征重要性", "D. 聚类中心"], "answer": ["A", "B", "C"], "explain": "聚类中心属于聚类输出。"},
+    {"type": "text", "question": "测试集占比一般是？", "answer": ["0.2", "0.3"], "explain": "20% ~ 30%。"},
+    {"type": "code", "question": "补全代码：预测概率", "codeSnippet": "y_prob = clf.predict____(X_test)[:, 1]", "answerLines": ["_proba"], "explain": "predict_proba 输出概率。"}
+  ]
+}
