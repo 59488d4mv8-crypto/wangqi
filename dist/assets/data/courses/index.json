@@ -1,0 +1,142 @@
+[
+  {
+    "id": "user-registration-activity",
+    "title": "教育平台用户注册与活跃行为分析",
+    "summary": "通过 Python 对教育平台用户注册、DAU/MAU、留存率进行可视化分析，识别用户活跃规律与增长瓶颈。",
+    "skills": ["Pandas", "Matplotlib", "留存分析"],
+    "difficulty": "入门",
+    "hours": 8,
+    "cover": "",
+    "resources": {
+      "python": "assets/data/resources/user-registration-activity/main.py",
+      "notebook": "assets/data/resources/user-registration-activity/notebook.ipynb",
+      "data": "assets/data/resources/user-registration-activity/sample_data.csv"
+    }
+  },
+  {
+    "id": "course-completion-dropout",
+    "title": "课程学习完成度与 dropout 流失预测",
+    "summary": "使用逻辑回归等模型对在线课程流失行为进行预测，识别高风险学员并制定干预策略。",
+    "skills": ["Scikit-learn", "分类模型", "特征工程"],
+    "difficulty": "进阶",
+    "hours": 10,
+    "cover": "",
+    "resources": {
+      "python": "assets/data/resources/course-completion-dropout/main.py",
+      "notebook": "assets/data/resources/course-completion-dropout/notebook.ipynb",
+      "data": "assets/data/resources/course-completion-dropout/sample_data.csv"
+    }
+  },
+  {
+    "id": "online-education-rfm",
+    "title": "在线教育用户 RFM 价值分层分析",
+    "summary": "基于最近购买、频次与消费金额构建 RFM 模型，对在线课程用户进行价值分层与运营策略建议。",
+    "skills": ["Pandas", "RFM 建模", "用户分层"],
+    "difficulty": "入门",
+    "hours": 8,
+    "cover": "",
+    "resources": {
+      "python": "assets/data/resources/online-education-rfm/main.py",
+      "notebook": "assets/data/resources/online-education-rfm/notebook.ipynb",
+      "data": "assets/data/resources/online-education-rfm/sample_data.csv"
+    }
+  },
+  {
+    "id": "review-nlp-sentiment",
+    "title": "课程评价 NLP 情感分析",
+    "summary": "利用 Python 文本分析与 NLP 方法对课程评论进行分词、情感倾向识别与关键词可视化。",
+    "skills": ["NLP", "词云", "情感分析"],
+    "difficulty": "进阶",
+    "hours": 10,
+    "cover": "",
+    "resources": {
+      "python": "assets/data/resources/review-nlp-sentiment/main.py",
+      "notebook": "assets/data/resources/review-nlp-sentiment/notebook.ipynb",
+      "data": "assets/data/resources/review-nlp-sentiment/sample_data.csv"
+    }
+  },
+  {
+    "id": "study-time-score-correlation",
+    "title": "学生学习时长与成绩相关性分析",
+    "summary": "运用相关性分析、线性回归探索学习时长、听课次数与课程成绩的关系，并用散点图可视化呈现。",
+    "skills": ["相关性分析", "线性回归", "Scipy"],
+    "difficulty": "入门",
+    "hours": 8,
+    "cover": "",
+    "resources": {
+      "python": "assets/data/resources/study-time-score-correlation/main.py",
+      "notebook": "assets/data/resources/study-time-score-correlation/notebook.ipynb",
+      "data": "assets/data/resources/study-time-score-correlation/sample_data.csv"
+    }
+  },
+  {
+    "id": "paid-conversion-funnel",
+    "title": "在线课程付费转化漏斗分析",
+    "summary": "构建从访问→注册→试听→付费的转化漏斗，识别关键流失环节并给出转化率优化建议。",
+    "skills": ["漏斗分析", "转化率", "业务洞察"],
+    "difficulty": "入门",
+    "hours": 8,
+    "cover": "",
+    "resources": {
+      "python": "assets/data/resources/paid-conversion-funnel/main.py",
+      "notebook": "assets/data/resources/paid-conversion-funnel/notebook.ipynb",
+      "data": "assets/data/resources/paid-conversion-funnel/sample_data.csv"
+    }
+  },
+  {
+    "id": "course-apriori",
+    "title": "课程关联规则分析 Apriori",
+    "summary": "基于用户选课记录采用 Apriori 算法挖掘课程组合购买规则，用于推荐系统与课程打包设计。",
+    "skills": ["Apriori", "关联规则", "mlxtend"],
+    "difficulty": "挑战",
+    "hours": 12,
+    "cover": "",
+    "resources": {
+      "python": "assets/data/resources/course-apriori/main.py",
+      "notebook": "assets/data/resources/course-apriori/notebook.ipynb",
+      "data": "assets/data/resources/course-apriori/sample_data.csv"
+    }
+  },
+  {
+    "id": "traffic-sales-timeseries",
+    "title": "访问量与销量时间序列预测",
+    "summary": "利用移动平均、指数平滑与 ARIMA 对平台访问量与销量进行时间序列建模与未来预测。",
+    "skills": ["时间序列", "ARIMA", "预测"],
+    "difficulty": "挑战",
+    "hours": 12,
+    "cover": "",
+    "resources": {
+      "python": "assets/data/resources/traffic-sales-timeseries/main.py",
+      "notebook": "assets/data/resources/traffic-sales-timeseries/notebook.ipynb",
+      "data": "assets/data/resources/traffic-sales-timeseries/sample_data.csv"
+    }
+  },
+  {
+    "id": "teacher-quality-score",
+    "title": "教师授课质量多维度综合评分",
+    "summary": "从评分、完课率、评价数等维度构建加权综合评分模型，对教师进行排名与质量画像。",
+    "skills": ["综合评分", "加权模型", "排名分析"],
+    "difficulty": "进阶",
+    "hours": 10,
+    "cover": "",
+    "resources": {
+      "python": "assets/data/resources/teacher-quality-score/main.py",
+      "notebook": "assets/data/resources/teacher-quality-score/notebook.ipynb",
+      "data": "assets/data/resources/teacher-quality-score/sample_data.csv"
+    }
+  },
+  {
+    "id": "user-persona-operation",
+    "title": "用户画像与精准运营策略",
+    "summary": "通过聚类分析构建用户画像，结合画像特征输出针对不同群体的精准营销与运营策略建议。",
+    "skills": ["K-Means", "聚类", "用户画像"],
+    "difficulty": "进阶",
+    "hours": 10,
+    "cover": "",
+    "resources": {
+      "python": "assets/data/resources/user-persona-operation/main.py",
+      "notebook": "assets/data/resources/user-persona-operation/notebook.ipynb",
+      "data": "assets/data/resources/user-persona-operation/sample_data.csv"
+    }
+  }
+]

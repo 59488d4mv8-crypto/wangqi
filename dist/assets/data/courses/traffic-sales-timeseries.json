@@ -1,0 +1,75 @@
+{
+  "id": "traffic-sales-timeseries",
+  "title": "访问量与销量时间序列预测",
+  "summary": "利用移动平均、指数平滑与 ARIMA 对平台访问量与销量进行时间序列建模与未来预测。",
+  "skills": ["时间序列", "ARIMA", "预测"],
+  "difficulty": "挑战",
+  "hours": 12,
+  "chapters": [
+    {
+      "id": "ch1",
+      "title": "时间序列数据探索",
+      "sections": [
+        {"type": "text", "content": "先读取日期索引的时间序列数据，观察趋势、季节性与波动。"},
+        {"type": "text", "content": "使用 plot 绘图可视化整体走势。"},
+        {"type": "code", "language": "python", "filename": "chapter1.py", "code": "import pandas as pd\nimport matplotlib.pyplot as plt\n\ndf = pd.read_csv('sample_data.csv', parse_dates=['date'], index_col='date')\nprint('时间范围：', df.index.min(), '~', df.index.max())\nprint(df.describe().round(2))\n\nplt.rcParams['font.sans-serif'] = ['SimHei']\ndf[['traffic', 'sales']].plot(figsize=(10, 4), secondary_y='sales')\nplt.title('访问量与销量时间序列')\nplt.tight_layout()\nplt.savefig('ts_raw.png', dpi=150)"},
+        {"type": "text", "content": "观察数据是否存在明显的趋势与周/月季节性。"},
+        {"type": "highlight", "content": "探索性分析是时间序列建模的基础。"}
+      ],
+      "quiz": [
+        {"type": "single", "question": "时间序列索引应使用什么类型？", "options": ["A. DatetimeIndex", "B. Integer", "C. Float", "D. String"], "answer": "A", "explain": "DatetimeIndex 是时间序列索引。"},
+        {"type": "multiple", "question": "时间序列的常见成分？", "options": ["A. 趋势", "B. 季节性", "C. 残差", "D. 分类"], "answer": ["A", "B", "C"], "explain": "分类不是时间成分。"},
+        {"type": "text", "question": "parse_dates 用于？", "answer": ["解析日期"], "explain": "解析日期列。"},
+        {"type": "code", "question": "补全代码：日期索引", "codeSnippet": "df = pd.read_csv('data.csv', parse_dates=['date'], index_____='date')", "answerLines": ["col"], "explain": "index_col 设置索引。"}
+      ]
+    },
+    {
+      "id": "ch2",
+      "title": "移动平均平滑",
+      "sections": [
+        {"type": "text", "content": "使用移动平均消除短期波动，得到平滑趋势。"},
+        {"type": "text", "content": "常用窗口大小 7 日、30 日。"},
+        {"type": "code", "language": "python", "filename": "chapter2.py", "code": "import pandas as pd\nimport matplotlib.pyplot as plt\n\ndf = pd.read_csv('sample_data.csv', parse_dates=['date'], index_col='date')\ndf['traffic_ma7'] = df['traffic'].rolling(window=7).mean()\ndf['sales_ma30'] = df['sales'].rolling(window=30).mean()\n\nplt.rcParams['font.sans-serif'] = ['SimHei']\nplt.figure(figsize=(10, 4))\nplt.plot(df['traffic'], label='原始访问量', alpha=0.4)\nplt.plot(df['traffic_ma7'], label='7 日移动平均', color='#2E86AB')\nplt.title('访问量及 7 日移动平均')\nplt.legend()\nplt.tight_layout()\nplt.savefig('ma7.png', dpi=150)"},
+        {"type": "text", "content": "移动平均可用于去噪及趋势识别。"},
+        {"type": "highlight", "content": "window 越大平滑越明显。"}
+      ],
+      "quiz": [
+        {"type": "single", "question": "rolling(window=7).mean() 表示？", "options": ["A. 7 日移动平均", "B. 7 日总和", "C. 7 日标准差", "D. 7 日中位数"], "answer": "A", "explain": "7 日移动平均。"},
+        {"type": "multiple", "question": "移动平均的用途？", "options": ["A. 去噪", "B. 趋势识别", "C. 异常检测", "D. 分类"], "answer": ["A", "B", "C"], "explain": "不用于分类。"},
+        {"type": "text", "question": "移动平均窗口越大平滑越？", "answer": ["明显"], "explain": "越明显。"},
+        {"type": "code", "question": "补全代码：rolling", "codeSnippet": "df['ma7'] = df['traffic']._______(window=7).mean()", "answerLines": ["rolling"], "explain": "rolling 生成窗口对象。"}
+      ]
+    },
+    {
+      "id": "ch3",
+      "title": "ARIMA 预测与评估",
+      "sections": [
+        {"type": "text", "content": "使用 ARIMA 模型对销量进行预测，计算预测误差并绘制结果。"},
+        {"type": "text", "content": "按 80/20 划分训练与测试集。"},
+        {"type": "code", "language": "python", "filename": "chapter3.py", "code": "import pandas as pd\nimport matplotlib.pyplot as plt\nfrom statsmodels.tsa.arima.model import ARIMA\nfrom sklearn.metrics import mean_absolute_error\n\ndf = pd.read_csv('sample_data.csv', parse_dates=['date'], index_col='date')\nts = df['sales'].dropna().asfreq('D').ffill()\nn = int(0.8 * len(ts))\ntrain, test = ts[:n], ts[n:]\n\nmodel = ARIMA(train, order=(2, 1, 2)).fit()\nforecast = model.forecast(steps=len(test))\nprint('MAE：%.2f' % mean_absolute_error(test, forecast))\n\nplt.rcParams['font.sans-serif'] = ['SimHei']\nplt.figure(figsize=(10, 4))\nplt.plot(train.index, train, label='训练')\nplt.plot(test.index, test, label='真实', color='#2E86AB')\nplt.plot(test.index, forecast, label='预测', linestyle='--', color='#C73E1D')\nplt.title('ARIMA 销量预测')\nplt.legend()\nplt.tight_layout()\nplt.savefig('arima.png', dpi=150)"},
+        {"type": "text", "content": "对 ARIMA 的 order 参数进行调整可优化预测效果。"},
+        {"type": "highlight", "content": "ARIMA 是经典的时间序列预测算法。"}
+      ],
+      "quiz": [
+        {"type": "single", "question": "ARIMA 的 order(p, d, q) 中 d 表示？", "options": ["A. 差分阶数", "B. AR 阶数", "C. MA 阶数", "D. 窗口大小"], "answer": "A", "explain": "d = 差分阶数。"},
+        {"type": "multiple", "question": "常见时间序列模型？", "options": ["A. ARIMA", "B. ETS", "C. Prophet", "D. K-Means"], "answer": ["A", "B", "C"], "explain": "K-Means 是聚类。"},
+        {"type": "text", "question": "时间序列预测的常用误差指标？", "answer": ["MAE", "RMSE"], "explain": "MAE、RMSE。"},
+        {"type": "code", "question": "补全代码：ARIMA", "codeSnippet": "from statsmodels.tsa.arima.model import ARIMA\nmodel = ARIMA(train, order=(2, 1, 2)).____()", "answerLines": ["fit"], "explain": "fit 拟合模型。"}
+      ]
+    }
+  ],
+  "finalExam": [
+    {"type": "single", "question": "时间序列的索引常用类型？", "options": ["A. DatetimeIndex", "B. Int64", "C. Float", "D. String"], "answer": "A", "explain": "DatetimeIndex。"},
+    {"type": "multiple", "question": "时间序列的常见成分？", "options": ["A. 趋势", "B. 季节性", "C. 残差", "D. 分类"], "answer": ["A", "B", "C"], "explain": "分类不属于。"},
+    {"type": "text", "question": "window=7 的 rolling mean 称为？", "answer": ["7日移动平均"], "explain": "7 日移动平均。"},
+    {"type": "code", "question": "补全代码：rolling", "codeSnippet": "df['ma7'] = df['traffic'].____(window=7).mean()", "answerLines": ["rolling"], "explain": "rolling 对象。"},
+    {"type": "single", "question": "ARIMA 中的 p 表示？", "options": ["A. AR 阶数", "B. 差分阶数", "C. MA 阶数", "D. 误差"], "answer": "A", "explain": "p = AR 阶数。"},
+    {"type": "multiple", "question": "常见的时间序列评估指标？", "options": ["A. MAE", "B. RMSE", "C. MAPE", "D. F1"], "answer": ["A", "B", "C"], "explain": "F1 是分类指标。"},
+    {"type": "text", "question": "ffill 的作用是？", "answer": ["前向填充"], "explain": "前向填充缺失值。"},
+    {"type": "code", "question": "补全代码：forecast", "codeSnippet": "forecast = model.____(steps=len(test))", "answerLines": ["forecast"], "explain": "forecast 做预测。"},
+    {"type": "single", "question": "secondary_y 在绘图中的作用？", "options": ["A. 次要 y 轴", "B. 次要 x 轴", "C. 颜色", "D. 字体"], "answer": "A", "explain": "设置第二个 y 轴。"},
+    {"type": "multiple", "question": "时间序列的常见问题？", "options": ["A. 缺失值", "B. 异常值", "C. 季节性", "D. 分类变量"], "answer": ["A", "B", "C"], "explain": "分类变量不是时间序列问题。"},
+    {"type": "text", "question": "ARIMA 的英文全称？", "answer": ["AutoRegressive Integrated Moving Average"], "explain": "ARIMA 全称。"},
+    {"type": "code", "question": "补全代码：MAE", "codeSnippet": "from sklearn.metrics import mean_absolute_error\nmae = mean_absolute_error(test, ____)", "answerLines": ["forecast"], "explain": "对比预测值与真实值。"}
+  ]
+}

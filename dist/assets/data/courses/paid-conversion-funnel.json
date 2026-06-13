@@ -1,0 +1,75 @@
+{
+  "id": "paid-conversion-funnel",
+  "title": "在线课程付费转化漏斗分析",
+  "summary": "构建从访问、注册、试听、付费的转化漏斗，识别关键流失环节并给出转化率优化建议。",
+  "skills": ["漏斗分析", "转化率", "业务洞察"],
+  "difficulty": "入门",
+  "hours": 8,
+  "chapters": [
+    {
+      "id": "ch1",
+      "title": "漏斗各环节用户数统计",
+      "sections": [
+        {"type": "text", "content": "漏斗分析是业务优化的基础方法。首先统计各环节的用户数：访问 -> 注册 -> 试听 -> 付费。"},
+        {"type": "text", "content": "使用 Pandas 聚合各阶段人数，并绘制柱状图展示。"},
+        {"type": "code", "language": "python", "filename": "chapter1.py", "code": "import pandas as pd\nimport matplotlib.pyplot as plt\n\ndf = pd.read_csv('sample_data.csv')\nstages = ['visit', 'register', 'trial', 'paid']\ncounts = [df[s].sum() for s in stages]\nfunnel = pd.DataFrame({'stage': stages, 'users': counts})\n\nprint(funnel)\nplt.rcParams['font.sans-serif'] = ['SimHei']\nfunnel.plot(x='stage', y='users', kind='bar', color='#2E86AB', figsize=(8, 4))\nplt.title('付费转化漏斗')\nplt.ylabel('用户数')\nplt.tight_layout()\nplt.savefig('funnel.png', dpi=150)"},
+        {"type": "text", "content": "从漏斗结构可以识别流失最严重的环节。"},
+        {"type": "highlight", "content": "漏斗分析是识别转化瓶颈的核心工具。"}
+      ],
+      "quiz": [
+        {"type": "single", "question": "漏斗分析主要用于？", "options": ["A. 识别转化瓶颈", "B. 分类", "C. 聚类", "D. 回归"], "answer": "A", "explain": "识别转化瓶颈是主要用途。"},
+        {"type": "multiple", "question": "常见漏斗环节包括？", "options": ["A. 访问", "B. 注册", "C. 试听", "D. 付费"], "answer": ["A", "B", "C", "D"], "explain": "典型漏斗四阶段。"},
+        {"type": "text", "question": "漏斗各环节用户数整体趋势？", "answer": ["递减"], "explain": "依次递减。"},
+        {"type": "code", "question": "补全代码：聚合", "codeSnippet": "import pandas as pd\ndf = pd.read_csv('data.csv')\nprint(df['paid'].____())", "answerLines": ["sum"], "explain": "sum 汇总用户数。"}
+      ]
+    },
+    {
+      "id": "ch2",
+      "title": "各阶段转化率计算",
+      "sections": [
+        {"type": "text", "content": "计算相邻阶段的转化率与整体转化率，识别最需优化的环节。"},
+        {"type": "text", "content": "转化率 = 当前阶段用户数 / 上一阶段用户数。"},
+        {"type": "code", "language": "python", "filename": "chapter2.py", "code": "import pandas as pd\n\ndf = pd.read_csv('sample_data.csv')\nvisit = df['visit'].sum()\nregister = df['register'].sum()\ntrial = df['trial'].sum()\npaid = df['paid'].sum()\n\nrates = {\n    '访问->注册': register / visit,\n    '注册->试听': trial / register,\n    '试听->付费': paid / trial,\n    '整体转化率': paid / visit\n}\n\nfor k, v in rates.items():\n    print(f'{k}：{v * 100:.2f}%')\nprint('最低转化率环节：', min(rates, key=rates.get))"},
+        {"type": "text", "content": "最低转化率环节是运营优化的重点。"},
+        {"type": "highlight", "content": "转化率是衡量运营效果的关键指标。"}
+      ],
+      "quiz": [
+        {"type": "single", "question": "转化率的计算公式？", "options": ["A. 当前 / 上一阶段", "B. 当前 + 上一阶段", "C. 当前 * 上一阶段", "D. 上一阶段 / 当前"], "answer": "A", "explain": "当前阶段用户数除以上一阶段用户数。"},
+        {"type": "multiple", "question": "提高转化率的常见策略？", "options": ["A. 简化流程", "B. 优惠券促销", "C. 用户精准推送", "D. 提高商品价格"], "answer": ["A", "B", "C"], "explain": "提高价格不利于转化。"},
+        {"type": "text", "question": "最低转化率环节称为？", "answer": ["瓶颈"], "explain": "业务瓶颈。"},
+        {"type": "code", "question": "补全代码：最小值索引", "codeSnippet": "min_rate_key = min(rates, key=rates.____)", "answerLines": ["get"], "explain": "get 方法取值。"}
+      ]
+    },
+    {
+      "id": "ch3",
+      "title": "分渠道转化率对比分析",
+      "sections": [
+        {"type": "text", "content": "按渠道分组分析不同来源的付费转化率，识别高质量渠道并加大投放。"},
+        {"type": "text", "content": "按渠道计算并可视化转化率差异。"},
+        {"type": "code", "language": "python", "filename": "chapter3.py", "code": "import pandas as pd\nimport matplotlib.pyplot as plt\n\ndf = pd.read_csv('sample_data.csv')\nchannel_conv = df.groupby('channel').agg(\n    total=('visit', 'sum'),\n    paid=('paid', 'sum')\n).reset_index()\nchannel_conv['conv_rate'] = channel_conv['paid'] / channel_conv['total']\nchannel_conv = channel_conv.sort_values('conv_rate', ascending=False)\nprint(channel_conv.round(4))\n\nplt.rcParams['font.sans-serif'] = ['SimHei']\nchannel_conv.plot(x='channel', y='conv_rate', kind='bar', color='#F18F01', figsize=(8, 4))\nplt.title('各渠道付费转化率')\nplt.ylabel('转化率')\nplt.tight_layout()\nplt.savefig('channel_funnel.png', dpi=150)"},
+        {"type": "text", "content": "识别高转化率渠道，用于后续投放优化。"},
+        {"type": "highlight", "content": "分渠道对比是精细化运营的基础。"}
+      ],
+      "quiz": [
+        {"type": "single", "question": "groupby agg 的作用是？", "options": ["A. 分组聚合", "B. 排序", "C. 绘图", "D. 随机抽样"], "answer": "A", "explain": "分组聚合。"},
+        {"type": "multiple", "question": "常见渠道维度？", "options": ["A. 搜索引擎", "B. 社交媒体", "C. 直接访问", "D. 付费推广"], "answer": ["A", "B", "C", "D"], "explain": "均为常见渠道。"},
+        {"type": "text", "question": "按渠道分组对比转化率是为了？", "answer": ["识别高转化渠道"], "explain": "识别高转化渠道用于投放优化。"},
+        {"type": "code", "question": "补全代码：排序", "codeSnippet": "channel_conv = channel_conv._______('conv_rate', ascending=False)", "answerLines": ["sort_values"], "explain": "sort_values 排序。"}
+      ]
+    }
+  ],
+  "finalExam": [
+    {"type": "single", "question": "付费转化漏斗的环节通常是？", "options": ["A. 访问->注册->试听->付费", "B. 访问->付费->注册->试听", "C. 付费->访问->注册", "D. 随机顺序"], "answer": "A", "explain": "标准漏斗顺序。"},
+    {"type": "multiple", "question": "漏斗分析的常见指标？", "options": ["A. 转化率", "B. 用户数", "C. 流失率", "D. 文本长度"], "answer": ["A", "B", "C"], "explain": "文本长度不相关。"},
+    {"type": "text", "question": "最低转化率环节称为？", "answer": ["业务瓶颈", "瓶颈"], "explain": "业务瓶颈。"},
+    {"type": "code", "question": "补全代码：聚合", "codeSnippet": "import pandas as pd\ndf.groupby('channel').____(total=('visit', 'sum'))", "answerLines": ["agg"], "explain": "agg 聚合方法。"},
+    {"type": "single", "question": "转化率 1% 表示？", "options": ["A. 100 人中 1 人转化", "B. 1 元转化 1 次", "C. 每天 1 次", "D. 1 小时 1 次"], "answer": "A", "explain": "每 100 人中 1 人转化。"},
+    {"type": "multiple", "question": "提高付费转化的常见手段？", "options": ["A. 优惠券", "B. 限时折扣", "C. 用户画像推送", "D. 简化购买流程"], "answer": ["A", "B", "C", "D"], "explain": "均为有效手段。"},
+    {"type": "text", "question": "转化率的公式？", "answer": ["当前/上一阶段"], "explain": "当前阶段 / 上一阶段。"},
+    {"type": "code", "question": "补全代码：排序", "codeSnippet": "df.sort_values('conv_rate', ascending=____)", "answerLines": ["False"], "explain": "ascending=False 降序。"},
+    {"type": "single", "question": "哪个环节转化率最差需要优先优化？", "options": ["A. 最低转化率", "B. 最高转化率", "C. 用户数最多的环节", "D. 用户数最少的环节"], "answer": "A", "explain": "最低转化率是瓶颈。"},
+    {"type": "multiple", "question": "漏斗分析的常见可视化？", "options": ["A. 柱状图", "B. 漏斗图", "C. 折线图", "D. 热力图"], "answer": ["A", "B", "C"], "explain": "热力图不适合漏斗。"},
+    {"type": "text", "question": "访问到付费的总转化率称为？", "answer": ["整体转化率"], "explain": "整体转化率。"},
+    {"type": "code", "question": "补全代码：分组后取最大", "codeSnippet": "df.groupby('channel')['conv_rate'].____()", "answerLines": ["max"], "explain": "max 取最大值。"}
+  ]
+}

@@ -1,0 +1,75 @@
+{
+  "id": "online-education-rfm",
+  "title": "在线教育用户 RFM 价值分层分析",
+  "summary": "基于最近购买、频次与消费金额构建 RFM 模型，对在线课程用户进行价值分层与运营策略建议。",
+  "skills": ["Pandas", "RFM 建模", "用户分层"],
+  "difficulty": "入门",
+  "hours": 8,
+  "chapters": [
+    {
+      "id": "ch1",
+      "title": "RFM 指标计算",
+      "sections": [
+        {"type": "text", "content": "RFM 是经典客户价值分析方法：R=Recency 最近购买天数、F=Frequency 购买频次、M=Monetary 消费总额。"},
+        {"type": "text", "content": "计算每位用户的 RFM 值，并使用五分位数打分（1~5 分）。"},
+        {"type": "code", "language": "python", "filename": "chapter1.py", "code": "import pandas as pd\n\ndf = pd.read_csv('sample_data.csv', parse_dates=['order_date'])\nreference_date = df['order_date'].max() + pd.Timedelta(days=1)\n\nrfm = df.groupby('user_id').agg(\n    Recency=('order_date', lambda x: (reference_date - x.max()).days),\n    Frequency=('order_id', 'nunique'),\n    Monetary=('amount', 'sum')\n).reset_index()\n\nrfm['R_score'] = pd.qcut(rfm['Recency'], 5, labels=[5, 4, 3, 2, 1]).astype(int)\nrfm['F_score'] = pd.qcut(rfm['Frequency'].rank(method='first'), 5, labels=[1, 2, 3, 4, 5]).astype(int)\nrfm['M_score'] = pd.qcut(rfm['Monetary'].rank(method='first'), 5, labels=[1, 2, 3, 4, 5]).astype(int)\nprint(rfm.describe().round(2))"},
+        {"type": "text", "content": "运行后得到每个用户的 RFM 三维度数值与分数。"},
+        {"type": "highlight", "content": "Recency 越小越近，R 分值越大代表用户越活跃。"}
+      ],
+      "quiz": [
+        {"type": "single", "question": "RFM 中的 R 代表？", "options": ["A. Recency", "B. Revenue", "C. Reach", "D. Rate"], "answer": "A", "explain": "R = Recency（最近一次购买距今的天数）。"},
+        {"type": "multiple", "question": "RFM 三维度包括？", "options": ["A. Recency", "B. Frequency", "C. Monetary", "D. Rate"], "answer": ["A", "B", "C"], "explain": "Rate 不是 RFM。"},
+        {"type": "text", "question": "按分位数分组的函数名是？", "answer": ["qcut"], "explain": "qcut 按分位数分箱。"},
+        {"type": "code", "question": "补全代码：qcut", "codeSnippet": "import pandas as pd\ndf['R_score'] = pd.____(df['Recency'], 5, labels=[5, 4, 3, 2, 1])", "answerLines": ["qcut"], "explain": "qcut 按分位数分箱。"}
+      ]
+    },
+    {
+      "id": "ch2",
+      "title": "RFM 用户分层",
+      "sections": [
+        {"type": "text", "content": "根据 RFM 分数构建用户分层规则。常见分层：重要价值、新客户、重要挽留、流失客户等。"},
+        {"type": "text", "content": "按分层统计各层用户数并绘制柱状图，展示分层分布。"},
+        {"type": "code", "language": "python", "filename": "chapter2.py", "code": "import pandas as pd\nimport matplotlib.pyplot as plt\n\ndf = pd.read_csv('sample_data.csv', parse_dates=['order_date'])\nref = df['order_date'].max() + pd.Timedelta(days=1)\nrfm = df.groupby('user_id').agg(\n    R=('order_date', lambda x: (ref - x.max()).days),\n    F=('order_id', 'nunique'),\n    M=('amount', 'sum')\n).reset_index()\nrfm['R'] = pd.qcut(rfm['R'], 5, labels=[5, 4, 3, 2, 1]).astype(int)\nrfm['F'] = pd.qcut(rfm['F'].rank(method='first'), 5, labels=[1, 2, 3, 4, 5]).astype(int)\nrfm['M'] = pd.qcut(rfm['M'].rank(method='first'), 5, labels=[1, 2, 3, 4, 5]).astype(int)\nrfm['RFM'] = rfm['R'].astype(str) + rfm['F'].astype(str) + rfm['M'].astype(str)\n\ndef segment(row):\n    if row['R'] >= 4 and row['F'] >= 4 and row['M'] >= 4: return '重要价值'\n    if row['R'] >= 4 and row['F'] <= 2: return '新客户'\n    if row['R'] <= 2 and row['F'] >= 4 and row['M'] >= 4: return '重要挽留'\n    if row['R'] <= 2 and row['F'] <= 2: return '流失客户'\n    return '一般维持'\n\nrfm['segment'] = rfm.apply(segment, axis=1)\nseg = rfm['segment'].value_counts()\nprint(seg)\n\nplt.rcParams['font.sans-serif'] = ['SimHei']\nseg.plot(kind='barh', color='#2E86AB', figsize=(8, 5))\nplt.title('RFM 分层用户数')\nplt.tight_layout()\nplt.savefig('rfm_segments.png', dpi=150)"},
+        {"type": "text", "content": "基于分层结果给出运营策略建议：重要价值重点维护，流失客户发送挽留优惠券等。"},
+        {"type": "highlight", "content": "不同分层应采取差异化的运营策略。"}
+      ],
+      "quiz": [
+        {"type": "single", "question": "高价值客户一般具备哪些特征？", "options": ["A. R 高 F 高 M 高", "B. R 低 F 低 M 低", "C. R 高 F 低 M 高", "D. R 低 F 高 M 低"], "answer": "A", "explain": "重要价值客户 RFM 分数均高。"},
+        {"type": "multiple", "question": "常见 RFM 分层包括？", "options": ["A. 重要价值", "B. 新客户", "C. 流失客户", "D. 重要挽留"], "answer": ["A", "B", "C", "D"], "explain": "均为常见分层。"},
+        {"type": "text", "question": "RFM 字符串拼接后形成的标签格式为？", "answer": ["RFM"], "explain": "如 555、333 等。"},
+        {"type": "code", "question": "补全代码：字符串拼接", "codeSnippet": "df['RFM'] = df['R'].astype(str) + df['F'].astype(str) + df['M'].astype(str)", "answerLines": ["str"], "explain": "astype(str) 将整数转为字符串。"}
+      ]
+    },
+    {
+      "id": "ch3",
+      "title": "基于聚类的 RFM 分群",
+      "sections": [
+        {"type": "text", "content": "使用 K-Means 聚类对用户做更客观的分群。先对 RFM 三维标准化后聚类。"},
+        {"type": "text", "content": "分析各群中心得到各群特征画像，结合业务给出策略。"},
+        {"type": "code", "language": "python", "filename": "chapter3.py", "code": "import pandas as pd\nfrom sklearn.preprocessing import StandardScaler\nfrom sklearn.cluster import KMeans\n\ndf = pd.read_csv('sample_data.csv', parse_dates=['order_date'])\nref = df['order_date'].max() + pd.Timedelta(days=1)\nrfm = df.groupby('user_id').agg(\n    Recency=('order_date', lambda x: (ref - x.max()).days),\n    Frequency=('order_id', 'nunique'),\n    Monetary=('amount', 'sum')\n).reset_index()\n\nscaler = StandardScaler()\nrfm_scaled = scaler.fit_transform(rfm[['Recency', 'Frequency', 'Monetary']])\nkm = KMeans(n_clusters=4, random_state=42, n_init=10)\nrfm['cluster'] = km.fit_predict(rfm_scaled)\n\nprint('各群组数量：')\nprint(rfm.groupby('cluster').agg(\n    R_avg=('Recency', 'mean'),\n    F_avg=('Frequency', 'mean'),\n    M_avg=('Monetary', 'mean')\n).round(2))"},
+        {"type": "text", "content": "将分群结果与业务结合，形成运营画像与策略。"},
+        {"type": "highlight", "content": "聚类 + RFM 是进阶分群方法。"}
+      ],
+      "quiz": [
+        {"type": "single", "question": "K-Means 的 n_clusters 参数表示？", "options": ["A. 聚类数", "B. 迭代次数", "C. 样本数", "D. 特征数"], "answer": "A", "explain": "指定聚类簇数量。"},
+        {"type": "multiple", "question": "聚类前的常见步骤包括？", "options": ["A. 标准化", "B. 缺失值处理", "C. 去噪", "D. 特征选择"], "answer": ["A", "B", "C", "D"], "explain": "均为常见数据准备步骤。"},
+        {"type": "text", "question": "用于标准化的 Scikit-learn 类名是？", "answer": ["StandardScaler"], "explain": "StandardScaler 将数据标准化为均值 0 方差 1。"},
+        {"type": "code", "question": "补全代码：K-Means 拟合并预测", "codeSnippet": "from sklearn.cluster import KMeans\nkm = KMeans(n_clusters=4, random_state=42, n_init=10)\nkm.____(X_scaled)", "answerLines": ["fit_predict"], "explain": "fit_predict 同时完成拟合与预测。"}
+      ]
+    }
+  ],
+  "finalExam": [
+    {"type": "single", "question": "RFM 中的 F 代表？", "options": ["A. Frequency", "B. First", "C. Final", "D. Factor"], "answer": "A", "explain": "F = Frequency。"},
+    {"type": "multiple", "question": "RFM 分析的目的包括？", "options": ["A. 用户分层", "B. 价值识别", "C. 精准运营", "D. 销量预测"], "answer": ["A", "B", "C"], "explain": "销量预测是时间序列任务。"},
+    {"type": "text", "question": "Recency 值越小说明？", "answer": ["越近购买"], "explain": "值越小越近。"},
+    {"type": "code", "question": "补全代码：Monetary 聚合", "codeSnippet": "Monetary = df.groupby('user_id')['amount'].____()", "answerLines": ["sum"], "explain": "消费金额求和。"},
+    {"type": "single", "question": "qcut 与 cut 的区别？", "options": ["A. qcut 按分位数分箱，cut 按自定义区间分箱", "B. 两者相同", "C. cut 按分位数分箱", "D. qcut 按等宽分箱"], "answer": "A", "explain": "qcut 基于分位数，cut 基于自定义区间。"},
+    {"type": "multiple", "question": "对重要价值客户的合理运营策略？", "options": ["A. VIP 服务", "B. 专属课程", "C. 定期回访", "D. 低价引流"], "answer": ["A", "B", "C"], "explain": "D 适合引流新客户。"},
+    {"type": "text", "question": "设置可复现实验的随机种子参数名是？", "answer": ["random_state"], "explain": "保证结果可复现。"},
+    {"type": "code", "question": "补全代码：KMeans 导入", "codeSnippet": "from sklearn.cluster import ____", "answerLines": ["KMeans"], "explain": "KMeans 类。"},
+    {"type": "single", "question": "RFM 得分最高的组合通常为？", "options": ["A. 555", "B. 111", "C. 333", "D. 222"], "answer": "A", "explain": "555 为最高质量客户。"},
+    {"type": "multiple", "question": "RFM 的常见业务应用？", "options": ["A. CRM", "B. 精准营销", "C. 用户画像", "D. 推荐系统"], "answer": ["A", "B", "C", "D"], "explain": "均为常见应用。"},
+    {"type": "text", "question": "Monetary 的中文含义是？", "answer": ["消费金额"], "explain": "消费总金额。"},
+    {"type": "code", "question": "补全代码：标准化", "codeSnippet": "from sklearn.preprocessing import StandardScaler\nscaler = StandardScaler()\nX_scaled = scaler.____(X)", "answerLines": ["fit_transform"], "explain": "fit_transform 同时拟合并转换。"}
+  ]
+}

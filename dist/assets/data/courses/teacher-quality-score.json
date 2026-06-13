@@ -1,0 +1,75 @@
+{
+  "id": "teacher-quality-score",
+  "title": "教师授课质量多维度综合评分",
+  "summary": "从评分、完课率、评价数等维度构建加权综合评分模型，对教师进行排名与质量画像。",
+  "skills": ["综合评分", "加权模型", "排名分析"],
+  "difficulty": "进阶",
+  "hours": 10,
+  "chapters": [
+    {
+      "id": "ch1",
+      "title": "多维度指标统计",
+      "sections": [
+        {"type": "text", "content": "从评分、完课率、评价数、出勤率等维度构建教师质量指标。"},
+        {"type": "text", "content": "使用 describe() 获得分布概览。"},
+        {"type": "code", "language": "python", "filename": "chapter1.py", "code": "import pandas as pd\nimport matplotlib.pyplot as plt\n\ndf = pd.read_csv('sample_data.csv')\nprint(df[['rating', 'completion_rate', 'review_count', 'attendance']].describe().round(2))\n\nplt.rcParams['font.sans-serif'] = ['SimHei']\ndf.plot(x='teacher', y='rating', kind='bar', color='#2E86AB', figsize=(10, 4))\nplt.title('教师平均评分')\nplt.tight_layout()\nplt.savefig('teacher_rating.png', dpi=150)"},
+        {"type": "text", "content": "各维度得分分布可用于识别异常值与异常教师。"},
+        {"type": "highlight", "content": "多维度指标是综合评分的基础。"}
+      ],
+      "quiz": [
+        {"type": "single", "question": "综合评分的第一步？", "options": ["A. 指标选取与标准化", "B. 预测", "C. 聚类", "D. 绘图"], "answer": "A", "explain": "先选指标再标准化。"},
+        {"type": "multiple", "question": "教师质量常见维度？", "options": ["A. 评分", "B. 完课率", "C. 评价数", "D. 出勤率"], "answer": ["A", "B", "C", "D"], "explain": "均为常见维度。"},
+        {"type": "text", "question": "获得分布概览用什么方法？", "answer": ["describe"], "explain": "describe()。"},
+        {"type": "code", "question": "补全代码：绘图", "codeSnippet": "df.plot(x='teacher', y='rating', kind='____')", "answerLines": ["bar"], "explain": "柱状图。"}
+      ]
+    },
+    {
+      "id": "ch2",
+      "title": "加权综合评分模型",
+      "sections": [
+        {"type": "text", "content": "按经验权重将各维度线性组合，如评分 0.4、完课率 0.3、评价数 0.2、出勤率 0.1。"},
+        {"type": "text", "content": "对不同量纲的指标先做最大-最小归一化。"},
+        {"type": "code", "language": "python", "filename": "chapter2.py", "code": "import pandas as pd\n\ndf = pd.read_csv('sample_data.csv')\ndf['review_norm'] = (df['review_count'] - df['review_count'].min()) / (df['review_count'].max() - df['review_count'].min())\ndf['attendance_norm'] = (df['attendance'] - df['attendance'].min()) / (df['attendance'].max() - df['attendance'].min())\n\ndf['quality_score'] = (df['rating'] * 0.4 + df['completion_rate'] * 100 * 0.3 + df['review_norm'] * 100 * 0.2 + df['attendance_norm'] * 100 * 0.1)\nsorted_df = df.sort_values('quality_score', ascending=False)\nprint('教师质量评分 Top 5：')\nprint(sorted_df[['teacher', 'quality_score']].head().round(2))"},
+        {"type": "text", "content": "根据综合评分对教师排序，识别高质量教师与待改进教师。"},
+        {"type": "highlight", "content": "权重的选择应结合业务经验。"}
+      ],
+      "quiz": [
+        {"type": "single", "question": "加权综合评分的权重总和一般为？", "options": ["A. 1", "B. 10", "C. 100", "D. 0"], "answer": "A", "explain": "一般总和为 1。"},
+        {"type": "multiple", "question": "标准化常用方法？", "options": ["A. min-max", "B. z-score", "C. 对数转换", "D. 独热编码"], "answer": ["A", "B", "C"], "explain": "独热编码是类别编码。"},
+        {"type": "text", "question": "最大-最小归一化的英文？", "answer": ["min-max normalization"], "explain": "min-max 归一化。"},
+        {"type": "code", "question": "补全代码：排序", "codeSnippet": "sorted_df = df._______('quality_score', ascending=False)", "answerLines": ["sort_values"], "explain": "sort_values 排序。"}
+      ]
+    },
+    {
+      "id": "ch3",
+      "title": "使用 Scikit-learn MinMaxScaler 的综合评分",
+      "sections": [
+        {"type": "text", "content": "使用 Scikit-learn 的 MinMaxScaler 对多维度进行归一化，再按权重加权。"},
+        {"type": "text", "content": "将综合得分输出为排名可视化。"},
+        {"type": "code", "language": "python", "filename": "chapter3.py", "code": "import pandas as pd\nfrom sklearn.preprocessing import MinMaxScaler\nimport matplotlib.pyplot as plt\n\ndf = pd.read_csv('sample_data.csv')\nscaler = MinMaxScaler()\ndf[['rating_s', 'completion_s', 'review_s', 'attendance_s']] = scaler.fit_transform(df[['rating', 'completion_rate', 'review_count', 'attendance']])\ndf['quality'] = df['rating_s'] * 0.35 + df['completion_s'] * 0.30 + df['review_s'] * 0.20 + df['attendance_s'] * 0.15\ndf = df.sort_values('quality', ascending=False)\nprint(df[['teacher', 'quality']].round(3))\n\nplt.rcParams['font.sans-serif'] = ['SimHei']\ndf.plot(x='teacher', y='quality', kind='barh', color='#F18F01', figsize=(10, 6))\nplt.title('教师综合质量评分')\nplt.tight_layout()\nplt.savefig('teacher_quality.png', dpi=150)"},
+        {"type": "text", "content": "综合评分可直接用于排名与教师画像。"},
+        {"type": "highlight", "content": "标准化消除量纲差异，加权融合业务规则。"}
+      ],
+      "quiz": [
+        {"type": "single", "question": "MinMaxScaler 的输出范围？", "options": ["A. 0 到 1", "B. -1 到 1", "C. -2 到 2", "D. 0 到 100"], "answer": "A", "explain": "0 到 1。"},
+        {"type": "multiple", "question": "综合评分的常见方式？", "options": ["A. 加权求和", "B. 几何平均", "C. 因子分析", "D. TOPSIS"], "answer": ["A", "B", "C", "D"], "explain": "均为综合评价方法。"},
+        {"type": "text", "question": "用于标准化的 sklearn 类名？", "answer": ["MinMaxScaler", "StandardScaler"], "explain": "MinMaxScaler 与 StandardScaler。"},
+        {"type": "code", "question": "补全代码：fit_transform", "codeSnippet": "df[cols] = scaler._____transform(df[cols])", "answerLines": ["fit"], "explain": "fit_transform。"}
+      ]
+    }
+  ],
+  "finalExam": [
+    {"type": "single", "question": "综合评分中权重总和一般为？", "options": ["A. 1", "B. 100", "C. 0", "D. 任意"], "answer": "A", "explain": "一般为 1。"},
+    {"type": "multiple", "question": "常见的标准化方法？", "options": ["A. min-max", "B. z-score", "C. 对数", "D. rank"], "answer": ["A", "B", "C"], "explain": "rank 不是标准化。"},
+    {"type": "text", "question": "教师综合评分用于什么？", "answer": ["排名"], "explain": "教师排名。"},
+    {"type": "code", "question": "补全代码：排序", "codeSnippet": "df.sort_values('quality', ascending=____)", "answerLines": ["False"], "explain": "False 降序。"},
+    {"type": "single", "question": "加权综合评分属于？", "options": ["A. 多属性决策", "B. 分类", "C. 聚类", "D. 时间预测"], "answer": "A", "explain": "多属性决策。"},
+    {"type": "multiple", "question": "教师质量评价维度？", "options": ["A. rating", "B. completion_rate", "C. review_count", "D. attendance"], "answer": ["A", "B", "C", "D"], "explain": "均为常见维度。"},
+    {"type": "text", "question": "消除量纲差异的步骤称为？", "answer": ["标准化"], "explain": "标准化。"},
+    {"type": "code", "question": "补全代码：scaler", "codeSnippet": "from sklearn.preprocessing import MinMaxScaler\nscaler = MinMaxScaler()\nscaler.____(df[cols])", "answerLines": ["fit"], "explain": "fit 拟合。"},
+    {"type": "single", "question": "综合评分的可视化？", "options": ["A. 柱状图", "B. 饼图", "C. 散点图", "D. 热力图"], "answer": "A", "explain": "柱状图。"},
+    {"type": "multiple", "question": "综合评分的应用？", "options": ["A. 教师排名", "B. 质量画像", "C. 绩效评估", "D. 销售预测"], "answer": ["A", "B", "C"], "explain": "销售预测不相关。"},
+    {"type": "text", "question": "权重设计一般结合？", "answer": ["业务经验"], "explain": "业务经验。"},
+    {"type": "code", "question": "补全代码：取前 5", "codeSnippet": "df.sort_values('quality', ascending=False).____(5)", "answerLines": ["head"], "explain": "head。"}
+  ]
+}

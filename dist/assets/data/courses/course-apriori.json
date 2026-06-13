@@ -1,0 +1,75 @@
+{
+  "id": "course-apriori",
+  "title": "课程关联规则分析 Apriori",
+  "summary": "基于用户选课记录采用 Apriori 算法挖掘课程组合购买规则，用于推荐系统与课程打包设计。",
+  "skills": ["Apriori", "关联规则", "mlxtend"],
+  "difficulty": "挑战",
+  "hours": 12,
+  "chapters": [
+    {
+      "id": "ch1",
+      "title": "用户选课订单数据探索",
+      "sections": [
+        {"type": "text", "content": "分析每个订单中出现的课程集合，是关联规则的输入数据。"},
+        {"type": "text", "content": "按 order_id 分组获取每个订单包含的课程列表。"},
+        {"type": "code", "language": "python", "filename": "chapter1.py", "code": "import pandas as pd\n\ndf = pd.read_csv('sample_data.csv')\nbasket = df.groupby('order_id')['course'].apply(set).reset_index(name='courses')\nprint('订单总数：', len(basket))\nfor _, row in basket.head(3).iterrows():\n    print(f\"订单 {row['order_id']} -> {sorted(row['courses'])}\")"},
+        {"type": "text", "content": "每个订单的课程集合是 Apriori 输入格式。"},
+        {"type": "highlight", "content": "订单-商品矩阵是 Apriori 输入。"}
+      ],
+      "quiz": [
+        {"type": "single", "question": "关联规则的典型输入格式？", "options": ["A. 订单-商品矩阵", "B. CSV 时间序列", "C. 纯文本", "D. 图像"], "answer": "A", "explain": "订单-商品矩阵是标准输入。"},
+        {"type": "multiple", "question": "常见的频繁项集挖掘算法？", "options": ["A. Apriori", "B. FP-Growth", "C. Eclat", "D. K-Means"], "answer": ["A", "B", "C"], "explain": "K-Means 是聚类。"},
+        {"type": "text", "question": "取订单集合时用什么函数？", "answer": ["set"], "explain": "set。"},
+        {"type": "code", "question": "补全代码：apply 应用", "codeSnippet": "basket = df.groupby('order_id')['course'].____(set)", "answerLines": ["apply"], "explain": "apply 将每个分组应用。"}
+      ]
+    },
+    {
+      "id": "ch2",
+      "title": "Apriori 频繁项集与规则挖掘",
+      "sections": [
+        {"type": "text", "content": "使用 mlxtend 的 Apriori 挖掘频繁项集，然后生成关联规则。"},
+        {"type": "text", "content": "参数 min_support 控制频繁项阈值，metric=lift 衡量规则重要性。"},
+        {"type": "code", "language": "python", "filename": "chapter2.py", "code": "import pandas as pd\nfrom mlxtend.frequent_patterns import apriori, association_rules\n\ndf = pd.read_csv('sample_data.csv')\nitems = sorted(df['course'].unique())\nbasket_sets = df.groupby('order_id')['course'].apply(set)\nonehot = pd.DataFrame([{c: (c in s) for c in items} for s in basket_sets])\nfrequent_items = apriori(onehot, min_support=0.05, use_colnames=True)\nrules = association_rules(frequent_items, metric='lift', min_threshold=1.0)\nprint('前 5 条规则：')\nprint(rules[['antecedents', 'consequents', 'support', 'confidence', 'lift']].head().round(3))"},
+        {"type": "text", "content": "结果解读：高置信度与高提升度的规则是跨课程推荐的核心。"},
+        {"type": "highlight", "content": "Apriori 是最经典的关联规则算法。"}
+      ],
+      "quiz": [
+        {"type": "single", "question": "Apriori 中 support 表示？", "options": ["A. 项集出现的概率", "B. 条件概率", "C. 提升度", "D. 召回率"], "answer": "A", "explain": "support = 包含项集的订单比例。"},
+        {"type": "multiple", "question": "关联规则的常见度量？", "options": ["A. support", "B. confidence", "C. lift", "D. recall"], "answer": ["A", "B", "C"], "explain": "recall 不是。"},
+        {"type": "text", "question": "提升度的英文？", "answer": ["lift"], "explain": "lift。"},
+        {"type": "code", "question": "补全代码：Apriori", "codeSnippet": "from mlxtend.frequent_patterns import apriori\nitemsets = apriori(onehot, min_support=0.05, use_colnames=True)", "answerLines": ["apriori"], "explain": "apriori 算法。"}
+      ]
+    },
+    {
+      "id": "ch3",
+      "title": "高提升度规则筛选与可视化",
+      "sections": [
+        {"type": "text", "content": "筛选 top 规则并可视化，识别课程组合与打包推荐。"},
+        {"type": "text", "content": "按提升度排序并输出 top 10 规则。"},
+        {"type": "code", "language": "python", "filename": "chapter3.py", "code": "import pandas as pd\nfrom mlxtend.frequent_patterns import apriori, association_rules\nimport matplotlib.pyplot as plt\n\ndf = pd.read_csv('sample_data.csv')\nitems = sorted(df['course'].unique())\nbasket_sets = df.groupby('order_id')['course'].apply(set)\nonehot = pd.DataFrame([{c: (c in s) for c in items} for s in basket_sets])\nfreq_items = apriori(onehot, min_support=0.03, use_colnames=True)\nrules = association_rules(freq_items, metric='confidence', min_threshold=0.3)\n\ntop_rules = rules.sort_values('lift', ascending=False).head(10)\nprint('Top 10 高提升度规则：')\nprint(top_rules[['antecedents', 'consequents', 'support', 'confidence', 'lift']].round(3))\n\nplt.rcParams['font.sans-serif'] = ['SimHei']\ntop_rules['label'] = top_rules['antecedents'].astype(str) + '->' + top_rules['consequents'].astype(str)\ntop_rules.plot(x='label', y='lift', kind='barh', color='#C73E1D', figsize=(10, 6))\nplt.title('关联规则提升度')\nplt.tight_layout()\nplt.savefig('apriori_lift.png', dpi=150)"},
+        {"type": "text", "content": "高提升度规则可直接用于课程推荐和打包。"},
+        {"type": "highlight", "content": "lift 提升度 > 1 表示有正向关联。"}
+      ],
+      "quiz": [
+        {"type": "single", "question": "lift > 1 表示？", "options": ["A. 正向关联", "B. 无关联", "C. 反向关联", "D. 无法判断"], "answer": "A", "explain": "lift>1 表示正向关联。"},
+        {"type": "multiple", "question": "筛选规则的常见方式？", "options": ["A. 按 lift", "B. 按 confidence", "C. 按 support", "D. 按样本大小"], "answer": ["A", "B", "C"], "explain": "样本大小不是筛选依据。"},
+        {"type": "text", "question": "高置信度用什么度量？", "answer": ["confidence"], "explain": "confidence。"},
+        {"type": "code", "question": "补全代码：排序", "codeSnippet": "top_rules = rules.________('lift', ascending=False).head(10)", "answerLines": ["sort_values"], "explain": "sort_values 排序。"}
+      ]
+    }
+  ],
+  "finalExam": [
+    {"type": "single", "question": "Apriori 算法用于？", "options": ["A. 关联规则挖掘", "B. 分类", "C. 聚类", "D. 回归"], "answer": "A", "explain": "关联规则。"},
+    {"type": "multiple", "question": "关联规则常用度量？", "options": ["A. support", "B. confidence", "C. lift", "D. 准确率"], "answer": ["A", "B", "C"], "explain": "准确率是分类指标。"},
+    {"type": "text", "question": "项集出现的订单比例称为？", "answer": ["support"], "explain": "support。"},
+    {"type": "code", "question": "补全代码：association_rules", "codeSnippet": "from mlxtend.frequent_patterns import association_rules\nrules = association_rules(freq_items, metric='lift', min_threshold=1.0)", "answerLines": ["association_rules"], "explain": "生成规则。"},
+    {"type": "single", "question": "最小支持度一般设为？", "options": ["A. 0.01~0.1", "B. 1~5", "C. 100", "D. 0.5~1.0"], "answer": "A", "explain": "典型 1%~10%。"},
+    {"type": "multiple", "question": "关联规则应用？", "options": ["A. 购物篮推荐", "B. 课程打包", "C. 交叉销售", "D. 时间预测"], "answer": ["A", "B", "C"], "explain": "时间预测不相关。"},
+    {"type": "text", "question": "条件概率对应的度量是？", "answer": ["confidence"], "explain": "confidence 置信度。"},
+    {"type": "code", "question": "补全代码：lift 排序", "codeSnippet": "rules.sort_values('____', ascending=False)", "answerLines": ["lift"], "explain": "按提升度排序。"},
+    {"type": "single", "question": "frozenset 是？", "options": ["A. 不可变集合", "B. 字典", "C. 列表", "D. 数组"], "answer": "A", "explain": "frozenset 是不可变集合。"},
+    {"type": "multiple", "question": "mlxtend 提供的功能？", "options": ["A. apriori", "B. association_rules", "C. 绘图", "D. 聚类"], "answer": ["A", "B"], "explain": "主要是关联规则。"},
+    {"type": "text", "question": "lift 提升度越高表示关联？", "answer": ["越强"], "explain": "越强。"},
+    {"type": "code", "question": "补全代码：排序 head", "codeSnippet": "rules.sort_values('lift', ascending=False).____(10)", "answerLines": ["head"], "explain": "head 取前 N。"}
+  ]
+}

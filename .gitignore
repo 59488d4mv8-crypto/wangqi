@@ -23,7 +23,7 @@ env/
 
 # Node / npm
 node_modules/
-dist/
+# dist/ 不忽略 — 在本仓库中作为 Cloudflare Pages 的默认构建输出目录存在
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*

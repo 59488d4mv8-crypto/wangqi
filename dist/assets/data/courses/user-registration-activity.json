@@ -1,0 +1,75 @@
+{
+  "id": "user-registration-activity",
+  "title": "教育平台用户注册与活跃行为分析",
+  "summary": "通过 Python 对教育平台用户注册、DAU/MAU、留存率进行可视化分析，识别用户活跃规律与增长瓶颈。",
+  "skills": ["Pandas", "Matplotlib", "留存分析"],
+  "difficulty": "入门",
+  "hours": 8,
+  "chapters": [
+    {
+      "id": "ch1",
+      "title": "用户注册数据的日趋势分析",
+      "sections": [
+        {"type": "text", "content": "用户注册数据是平台增长的首要指标。我们使用 Pandas 的 read_csv 读取样本数据，通过 groupby + nunique 对每日新增注册用户进行统计。"},
+        {"type": "text", "content": "本项目的 CSV 示例字段包括 user_id、register_date、channel、device、last_login 等。先做基础的数据清洗与缺失值处理。"},
+        {"type": "code", "language": "python", "filename": "chapter1.py", "code": "import pandas as pd\nimport matplotlib.pyplot as plt\n\ndf = pd.read_csv('sample_data.csv', parse_dates=['register_date'])\ndaily = df.groupby(df['register_date'].dt.date)['user_id'].nunique().reset_index()\ndaily.columns = ['register_date', 'user_count']\n\nplt.rcParams['font.sans-serif'] = ['SimHei']\nplt.rcParams['axes.unicode_minus'] = False\nplt.figure(figsize=(10, 4))\nplt.plot(daily['register_date'], daily['user_count'], marker='o', color='#2E86AB')\nplt.title('每日新增注册用户数')\nplt.xlabel('日期')\nplt.ylabel('新增用户数')\nplt.xticks(rotation=45)\nplt.tight_layout()\nplt.savefig('register_trend.png', dpi=150)\nprint('日均值：%.2f' % daily['user_count'].mean())\nprint('日峰值：%d' % daily['user_count'].max())"},
+        {"type": "text", "content": "运行上述代码可得到按天的时间序列折线图，从中可观察平台的增长或下降趋势，识别周末效应或节假日影响。"},
+        {"type": "highlight", "content": "使用 Pandas 时间索引与 groupby 结合是时间序列分析的基础工具。"}
+      ],
+      "quiz": [
+        {"type": "single", "question": "统计每日新增注册用户数最合适的 Pandas 方法是？", "options": ["A. df.resample('D').nunique()", "B. df.mean()", "C. df.sum()", "D. df.count()"], "answer": "A", "explain": "resample('D') 将日期重采样为日粒度，nunique 统计唯一用户 ID。"},
+        {"type": "multiple", "question": "常用的用户增长指标包括？", "options": ["A. DAU", "B. MAU", "C. 留存率", "D. 用户 ID"], "answer": ["A", "B", "C"], "explain": "DAU/MAU/留存率都是增长指标，用户 ID 只是标识符。"},
+        {"type": "text", "question": "时间序列折线图的 x 轴一般放置什么变量？", "answer": ["日期", "时间"], "explain": "日期或时间变量作为横轴。"},
+        {"type": "code", "question": "补全代码：按日统计注册用户数", "codeSnippet": "import pandas as pd\ndf = pd.read_csv('data.csv', parse_dates=['register_date'])\nresult = df.groupby(df['register_date'].dt.____)['user_id'].____().reset_index()", "answerLines": ["date", "nunique"], "explain": "dt.date 将日期截断到日，nunique 统计唯一用户数。"}
+      ]
+    },
+    {
+      "id": "ch2",
+      "title": "渠道来源与 DAU 对比分析",
+      "sections": [
+        {"type": "text", "content": "不同渠道（搜索引擎、社交媒体、直接访问）带来的用户质量差异较大。理解渠道对比能帮助评估渠道 ROI 与投放优化。"},
+        {"type": "text", "content": "使用 pivot_table 构建以渠道为维度的透视表，然后绘制多系列折线图对比各渠道新增用户的变化趋势。"},
+        {"type": "code", "language": "python", "filename": "chapter2.py", "code": "import pandas as pd\nimport matplotlib.pyplot as plt\n\ndf = pd.read_csv('sample_data.csv', parse_dates=['register_date'])\nchannel_dau = df.pivot_table(index=df['register_date'].dt.date, columns='channel', values='user_id', aggfunc='nunique').fillna(0)\n\nplt.rcParams['font.sans-serif'] = ['SimHei']\nplt.figure(figsize=(10, 4))\nfor col in channel_dau.columns:\n    plt.plot(channel_dau.index, channel_dau[col], marker='o', label=col)\nplt.title('各渠道新增注册')\nplt.xlabel('日期')\nplt.ylabel('用户数')\nplt.legend()\nplt.xticks(rotation=45)\nplt.tight_layout()\nplt.savefig('channel_dau.png', dpi=150)\nprint(channel_dau.describe().round(2))"},
+        {"type": "text", "content": "渠道对比后可发现某些渠道用户增长快但质量较低，需要结合后续留存率进一步判断。"},
+        {"type": "highlight", "content": "渠道效果需结合数量与质量双重维度判断。"}
+      ],
+      "quiz": [
+        {"type": "single", "question": "绘制渠道时间对比最直观的图表类型是？", "options": ["A. 饼图", "B. 多系列折线图", "C. 散点图", "D. 热力图"], "answer": "B", "explain": "多系列折线图可同时展示多个渠道的时间变化。"},
+        {"type": "multiple", "question": "影响渠道用户质量的常见因素包括？", "options": ["A. 投放时间", "B. 用户画像", "C. 渠道来源", "D. 服务器 IP"], "answer": ["A", "B", "C"], "explain": "IP 与用户质量无直接关系。"},
+        {"type": "text", "question": "透视表的英文函数名是？", "answer": ["pivot_table"], "explain": "Pandas 的 pivot_table 方法构造透视表。"},
+        {"type": "code", "question": "补全代码：渠道 DAU", "codeSnippet": "import pandas as pd\ndf = pd.read_csv('data.csv')\nresult = df._____table(index='date', columns='channel', values='user_id', aggfunc='nunique')", "answerLines": ["pivot"], "explain": "pivot_table 构造多维聚合。"}
+      ]
+    },
+    {
+      "id": "ch3",
+      "title": "7 日与 30 日用户留存率分析",
+      "sections": [
+        {"type": "text", "content": "留存率是评估用户粘性的核心指标。计算公式为注册后 N 天仍有行为的用户比例。"},
+        {"type": "text", "content": "通过计算 last_login 与 register_date 的时间差，对不同渠道计算 7 日留存率并进行可视化。"},
+        {"type": "code", "language": "python", "filename": "chapter3.py", "code": "import pandas as pd\nimport matplotlib.pyplot as plt\n\ndf = pd.read_csv('sample_data.csv', parse_dates=['register_date', 'last_login'])\ndf['days_diff'] = (df['last_login'] - df['register_date']).dt.days\ndf['retain_7d'] = df['days_diff'] >= 7\n\nretention = df.groupby('channel')['retain_7d'].mean().sort_values(ascending=False)\nprint('各渠道 7 日留存率：')\nfor c, v in retention.items():\n    print(f'  {c}: {v*100:.2f}%')\n\nplt.rcParams['font.sans-serif'] = ['SimHei']\nretention.plot(kind='bar', color='#F18F01', figsize=(8, 4))\nplt.title('各渠道 7 日留存率')\nplt.ylabel('留存率')\nplt.ylim(0, 1)\nplt.tight_layout()\nplt.savefig('retention.png', dpi=150)"},
+        {"type": "text", "content": "留存率低的渠道应当重点优化，如新手引导、课程推荐与消息提醒等运营手段。"},
+        {"type": "highlight", "content": "留存率是比新增更反映产品粘性的核心指标。"}
+      ],
+      "quiz": [
+        {"type": "single", "question": "7 日留存率的定义是？", "options": ["A. 注册后 7 日内仍登录的用户比例", "B. 7 天内新增注册用户数", "C. 7 日 DAU", "D. 7 日 MAU"], "answer": "A", "explain": "留存率 = 留存用户/注册用户。"},
+        {"type": "multiple", "question": "常用的留存分析维度包括？", "options": ["A. 按渠道", "B. 按设备", "C. 按课程类型", "D. 按注册小时"], "answer": ["A", "B", "C", "D"], "explain": "四个维度都能提供不同视角。"},
+        {"type": "text", "question": "两列日期相减得到的 Timedelta 获取天数的属性名是？", "answer": ["days"], "explain": "Timedelta.days 或 dt.days 都可获取天数。"},
+        {"type": "code", "question": "补全代码：计算天数差", "codeSnippet": "import pandas as pd\ndf = pd.read_csv('data.csv', parse_dates=['register_date','last_login'])\ndf['days_diff'] = (df['last_login'] - df['register_date']).dt.____", "answerLines": ["days"], "explain": "使用 dt.days 提取天数差。"}
+      ]
+    }
+  ],
+  "finalExam": [
+    {"type": "single", "question": "用于统计日新增注册用户数最合适的函数是？", "options": ["A. nunique()", "B. sum()", "C. count()", "D. mean()"], "answer": "A", "explain": "nunique 统计唯一用户 ID 更合适。"},
+    {"type": "multiple", "question": "以下属于增长指标的是？", "options": ["A. DAU", "B. MAU", "C. 留存率", "D. 付费率"], "answer": ["A", "B", "C", "D"], "explain": "均为典型增长指标。"},
+    {"type": "text", "question": "Matplotlib 中设置中文字体使用的 rcParams 键名是？", "answer": ["font.sans-serif"], "explain": "font.sans-serif 控制字体族名称。"},
+    {"type": "code", "question": "补全代码：日期截断", "codeSnippet": "import pandas as pd\ndf = pd.read_csv('data.csv', parse_dates=['d'])\ndf['day'] = df['d'].dt.____", "answerLines": ["date"], "explain": "dt.date 返回日期部分。"},
+    {"type": "single", "question": "计算留存率最核心的两列字段是？", "options": ["A. user_id 与 register_date", "B. register_date 与 last_login", "C. channel 与 device", "D. user_id 与 channel"], "answer": "B", "explain": "需要注册日期与最近登录日期。"},
+    {"type": "multiple", "question": "影响留存率的因素包括？", "options": ["A. 课程质量", "B. 新手引导", "C. 推送频率", "D. 平台稳定性"], "answer": ["A", "B", "C", "D"], "explain": "均影响用户体验。"},
+    {"type": "text", "question": "展示各渠道留存率差异一般使用什么图？", "answer": ["柱状图", "bar"], "explain": "柱状图适合类别对比。"},
+    {"type": "code", "question": "补全代码：渠道留存率", "codeSnippet": "import pandas as pd\ndf = pd.read_csv('data.csv')\nret = df.groupby('channel')['retain_7d'].____()", "answerLines": ["mean"], "explain": "布尔值的 mean 即比例。"},
+    {"type": "single", "question": "DAU 的英文全称是？", "options": ["A. Daily Active Users", "B. Daily Average Users", "C. Daily Activated Units", "D. Daily Active Units"], "answer": "A", "explain": "DAU = Daily Active Users。"},
+    {"type": "multiple", "question": "以下对留存率分析说法正确的是？", "options": ["A. 留存率低的渠道需优化", "B. 留存率与时间无关", "C. 留存率能反映产品粘性", "D. 7 日与 30 日均重要"], "answer": ["A", "C", "D"], "explain": "B 错误，留存率与时间密切相关。"},
+    {"type": "text", "question": "注册后 7 日仍登录的用户占注册用户的比例称为？", "answer": ["7 日留存率", "7 日留存"], "explain": "7 日留存率。"},
+    {"type": "code", "question": "补全代码：分组聚合", "codeSnippet": "import pandas as pd\ndf = pd.read_csv('data.csv')\nresult = df.groupby('____')['user_id'].nunique()", "answerLines": ["channel"], "explain": "按渠道分组聚合。"}
+  ]
+}

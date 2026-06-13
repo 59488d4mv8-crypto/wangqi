@@ -1,0 +1,75 @@
+{
+  "id": "review-nlp-sentiment",
+  "title": "课程评价 NLP 情感分析",
+  "summary": "利用 Python 文本分析与 NLP 方法对课程评论进行分词、情感倾向识别与关键词可视化。",
+  "skills": ["NLP", "词云", "情感分析"],
+  "difficulty": "进阶",
+  "hours": 10,
+  "chapters": [
+    {
+      "id": "ch1",
+      "title": "文本数据清洗",
+      "sections": [
+        {"type": "text", "content": "文本数据常包含标点、表情、HTML 标签等噪声。第一步需要进行文本清洗。"},
+        {"type": "text", "content": "使用正则表达式去除非中文 / 英文 / 数字字符，保留干净文本内容。"},
+        {"type": "code", "language": "python", "filename": "chapter1.py", "code": "import pandas as pd\nimport re\n\ndf = pd.read_csv('sample_data.csv')\n\ndef clean_text(text):\n    if pd.isna(text): return ''\n    return re.sub(r'[^\\u4e00-\\u9fa5A-Za-z0-9 ]', '', str(text)).strip()\n\ndf['clean_review'] = df['review'].apply(clean_text)\nprint('清洗后前 5 条评论：')\nprint(df['clean_review'].head().tolist())"},
+        {"type": "text", "content": "清洗后的数据可进一步做分词、词频等分析。"},
+        {"type": "highlight", "content": "文本清洗是 NLP 分析的基础。"}
+      ],
+      "quiz": [
+        {"type": "single", "question": "文本清洗中常用的工具是？", "options": ["A. 正则表达式", "B. 决策树", "C. 线性回归", "D. K-Means"], "answer": "A", "explain": "正则表达式适合文本清洗与模式匹配。"},
+        {"type": "multiple", "question": "文本常见的噪声包括？", "options": ["A. 标点", "B. 表情", "C. 重复字符", "D. 停用词"], "answer": ["A", "B", "C", "D"], "explain": "均为文本常见噪声。"},
+        {"type": "text", "question": "中文的 Unicode 范围大致是？", "answer": ["\u4e00-\u9fa5"], "explain": "常用中文 Unicode 范围。"},
+        {"type": "code", "question": "补全代码：替换", "codeSnippet": "import re\ntext = re.____(r'[^0-9A-Za-z]', '', text)", "answerLines": ["sub"], "explain": "re.sub 用于替换匹配内容。"}
+      ]
+    },
+    {
+      "id": "ch2",
+      "title": "词频统计与关键词分析",
+      "sections": [
+        {"type": "text", "content": "通过简单的字符拆分统计词频，使用 Counter 输出 TopN 高频词。"},
+        {"type": "text", "content": "高频词反映用户评价的主要关注点与关键词分布。"},
+        {"type": "code", "language": "python", "filename": "chapter2.py", "code": "import pandas as pd\nfrom collections import Counter\nimport re\n\ndf = pd.read_csv('sample_data.csv')\nall_text = ' '.join(df['review'].dropna().astype(str))\nwords = re.findall(r'[\\u4e00-\\u9fa5]+', all_text)\n\nbigrams = []\nfor w in words:\n    for i in range(len(w) - 1):\n        bigrams.append(w[i:i+2])\n\ncnt = Counter(bigrams).most_common(20)\nprint('Top 20 高频 2 字词：', cnt[:10])"},
+        {"type": "text", "content": "高频词可用于生成词云图，快速把握评论焦点。"},
+        {"type": "highlight", "content": "词频是最基础的文本分析手段。"}
+      ],
+      "quiz": [
+        {"type": "single", "question": "Counter 的作用是？", "options": ["A. 统计词频", "B. 排序", "C. 去重", "D. 索引"], "answer": "A", "explain": "Counter 统计元素出现次数。"},
+        {"type": "multiple", "question": "中文分词常见工具包括？", "options": ["A. jieba", "B. HanLP", "C. SnowNLP", "D. Scikit-learn"], "answer": ["A", "B", "C"], "explain": "Scikit-learn 是机器学习库。"},
+        {"type": "text", "question": "Counter 返回 Top N 的方法名是？", "answer": ["most_common"], "explain": "most_common(n) 输出频率最高的 n 个元素。"},
+        {"type": "code", "question": "补全代码：Counter", "codeSnippet": "from collections import Counter\ncnt = Counter(tokens)\nprint(cnt.____(10))", "answerLines": ["most_common"], "explain": "获取频率最高的 10 个。"}
+      ]
+    },
+    {
+      "id": "ch3",
+      "title": "情感分类与可视化",
+      "sections": [
+        {"type": "text", "content": "使用关键词匹配 + 评分结合的方法对评论做情感分类（正面 / 负面 / 中性）。"},
+        {"type": "text", "content": "统计各情感的评论数并绘制柱状图。"},
+        {"type": "code", "language": "python", "filename": "chapter3.py", "code": "import pandas as pd\nimport matplotlib.pyplot as plt\n\ndf = pd.read_csv('sample_data.csv')\npositive_words = ['好', '棒', '优秀', '赞', '喜欢', '推荐', '清晰', '实用']\nnegative_words = ['差', '难', '烂', '失望', '慢', '水', '无聊', '太贵']\n\ndef simple_sentiment(text, score):\n    text = '' if pd.isna(text) else str(text)\n    pos = sum(text.count(w) for w in positive_words)\n    neg = sum(text.count(w) for w in negative_words)\n    if score >= 4 and pos > neg: return '正面'\n    if score <= 2 and neg > pos: return '负面'\n    if pos > neg: return '正面'\n    if neg > pos: return '负面'\n    return '中性'\n\ndf['sentiment'] = df.apply(lambda r: simple_sentiment(r['review'], r['score']), axis=1)\nsent_count = df['sentiment'].value_counts()\nprint('情感分布：', sent_count.to_dict())\n\nplt.rcParams['font.sans-serif'] = ['SimHei']\nsent_count.plot(kind='bar', color=['#2E86AB', '#C73E1D', '#F18F01'], figsize=(6, 4))\nplt.title('课程评论情感分布')\nplt.tight_layout()\nplt.savefig('sentiment.png', dpi=150)"},
+        {"type": "text", "content": "根据情感结果可用于课程质量监控与优化方向建议。"},
+        {"type": "highlight", "content": "情感分析能帮助改进课程质量与运营策略。"}
+      ],
+      "quiz": [
+        {"type": "single", "question": "简化情感分类一般分为哪三类？", "options": ["A. 正 / 负 / 中性", "B. 大 / 中 / 小", "C. 高 / 中 / 低", "D. 好 / 一般 / 差"], "answer": "A", "explain": "经典三分类。"},
+        {"type": "multiple", "question": "情感分析常见应用包括？", "options": ["A. 舆情监控", "B. 商品评价分析", "C. 客服质检", "D. 推荐系统"], "answer": ["A", "B", "C", "D"], "explain": "均为常见应用场景。"},
+        {"type": "text", "question": "基于关键词的方法叫？", "answer": ["规则匹配", "词典匹配"], "explain": "基于词典/关键词匹配。"},
+        {"type": "code", "question": "补全代码：关键词计数", "codeSnippet": "pos = sum(text.____(w) for w in positive_words)", "answerLines": ["count"], "explain": "count 统计关键词出现次数。"}
+      ]
+    }
+  ],
+  "finalExam": [
+    {"type": "single", "question": "NLP 的中文全称是？", "options": ["A. 自然语言处理", "B. 数字语言处理", "C. 神经网络处理", "D. 神经网络学习"], "answer": "A", "explain": "NLP = Natural Language Processing。"},
+    {"type": "multiple", "question": "中文分词常见方法？", "options": ["A. 基于词典", "B. 基于统计", "C. 基于深度学习", "D. 图像识别"], "answer": ["A", "B", "C"], "explain": "图像识别属于 CV 领域。"},
+    {"type": "text", "question": "re.sub 的作用是？", "answer": ["正则替换"], "explain": "正则表达式字符串替换。"},
+    {"type": "code", "question": "补全代码：re 导入", "codeSnippet": "import ____", "answerLines": ["re"], "explain": "导入正则模块。"},
+    {"type": "single", "question": "Counter 的 most_common(5) 返回？", "options": ["A. Top 5 高频词", "B. 最少 5 个", "C. 随机 5 个", "D. 最后 5 个"], "answer": "A", "explain": "返回频率最高的 5 个元素。"},
+    {"type": "multiple", "question": "情感分析常见方法？", "options": ["A. 基于词典", "B. 基于机器学习", "C. 基于深度学习", "D. t 检验"], "answer": ["A", "B", "C"], "explain": "t 检验是统计检验方法。"},
+    {"type": "text", "question": "常见中文分词库？", "answer": ["jieba"], "explain": "jieba 是最常用的中文分词库之一。"},
+    {"type": "code", "question": "补全代码：Counter 导入", "codeSnippet": "from collections import ____", "answerLines": ["Counter"], "explain": "Counter 类。"},
+    {"type": "single", "question": "re.findall 的作用是？", "options": ["A. 查找所有匹配", "B. 替换", "C. 分割", "D. 匹配一次"], "answer": "A", "explain": "查找所有匹配项。"},
+    {"type": "multiple", "question": "文本分析常见步骤？", "options": ["A. 清洗", "B. 分词", "C. 词频统计", "D. 可视化"], "answer": ["A", "B", "C", "D"], "explain": "标准四步。"},
+    {"type": "text", "question": "文本情感一般分为哪三类？", "answer": ["正面", "负面", "中性"], "explain": "正 / 负 / 中性三分类。"},
+    {"type": "code", "question": "补全代码：词频", "codeSnippet": "from collections import Counter\ncnt = Counter(words)\nprint(cnt.most_common(____))", "answerLines": ["10"], "explain": "取 Top 10。"}
+  ]
+}
